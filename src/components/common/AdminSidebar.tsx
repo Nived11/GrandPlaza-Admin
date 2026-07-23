@@ -2,12 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, ShoppingBag, Utensils, 
   Star, Users, DollarSign, LogOut, Mail, 
-  ChevronLeft, ChevronRight, X, BookIcon, Settings 
+  ChevronLeft, ChevronRight, X, BookIcon, Settings, Loader2
 } from "lucide-react";
+import { useAdminLogout } from "@/features/auth/hooks/useAdminLogout";
 
 interface AdminSidebarProps {
   isExpanded: boolean;
@@ -18,7 +19,7 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, setIsMobileOpen }: AdminSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
+  const { logout, loggingOut } = useAdminLogout();
   
   const navLinks = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} /> },
@@ -32,12 +33,6 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
     { name: "Settings", path: "/settings", icon: <Settings size={20} /> },
   ];
 
-  const handleLogoutAction = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-      router.push("/login");
-    }
-  };
 
   const isFull = isExpanded || isMobileOpen;
 
@@ -121,13 +116,21 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         {/* SYSTEM DISCONNECT PORT */}
         <div className="p-4 flex-shrink-0">
           <button 
-            onClick={handleLogoutAction}
-            className={`flex items-center rounded-xl transition-all duration-300 py-3.5 relative group w-full bg-red-950/40 hover:bg-red-900/40 border border-brand-gold/20 text-red-500 hover:text-red-600 cursor-pointer
+            onClick={logout}
+            disabled={loggingOut}
+            className={`flex items-center rounded-xl transition-all duration-300 py-3.5 relative group w-full bg-red-950/40 hover:bg-red-900/40 border border-brand-gold/20 text-red-500 hover:text-red-600 cursor-pointer disabled:opacity-50
               ${isFull ? "px-6 gap-4" : "justify-center"}`}
           >
-            <LogOut size={18} className="flex-shrink-0" />
+            {loggingOut ? (
+              <Loader2 size={18} className="animate-spin flex-shrink-0" />
+            ) : (
+              <LogOut size={18} className="flex-shrink-0" />
+            )}
+
             {isFull ? (
-              <span className="text-[12px] font-bold uppercase tracking-widest">logout</span>
+              <span className="text-[12px] font-bold uppercase tracking-widest">
+                {loggingOut ? "Logging out..." : "Logout"}
+              </span>
             ) : (
               <div className="fixed left-[100px] bg-red-900 text-white text-[10px] font-black px-3 py-2 rounded-md 
                 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all 
