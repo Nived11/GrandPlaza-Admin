@@ -21,14 +21,14 @@ export default function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
         <Menu size={20} />
       </button>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 md:gap-6">
         <ShopStatus />
         <NotificationBadge />
 
-        {/* PREMIUM ACCOUNT CONTAINER */}
-        <div className="flex items-center gap-5 pl-8 border-l border-brand-gold/20">
-          <div className="text-right hidden sm:block">
-            <p className="text-[12px] font-black text-brand-cream leading-tight uppercase tracking-widest ">
+        {/* PREMIUM ACCOUNT CONTAINER - Mobile-il entire profile text & avatar hide aakum */}
+        <div className="hidden md:flex items-center gap-5 pl-8 border-l border-brand-gold/20">
+          <div className="text-right">
+            <p className="text-[12px] font-black text-brand-cream leading-tight uppercase tracking-widest">
               Admin <span className="text-brand-gold font-normal not-italic">Portal</span>
             </p>
             
@@ -50,6 +50,7 @@ export default function AdminHeader({ onMenuToggle }: AdminHeaderProps) {
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-brand-green-dark rounded-full shadow-sm"></div>
           </div>
         </div>
+
       </div>
     </header>
   );

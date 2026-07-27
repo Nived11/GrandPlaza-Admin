@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -9,6 +9,7 @@ import {
   ChevronLeft, ChevronRight, X, BookIcon, Settings, Loader2
 } from "lucide-react";
 import { useAdminLogout } from "@/features/auth/hooks/useAdminLogout";
+import ConfirmModal from "@/components/ui/ConfirmModal"; // Component Path check cheyyuk
 
 interface AdminSidebarProps {
   isExpanded: boolean;
@@ -21,6 +22,9 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
   const pathname = usePathname();
   const { logout, loggingOut } = useAdminLogout();
   
+  // State for controlling Modal
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
   const navLinks = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} /> },
     { name: "Live Orders", path: "/orders", icon: <ShoppingBag size={20} /> },
@@ -30,11 +34,16 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
     { name: "Reviews", path: "/reviews", icon: <Star size={20} /> },
     { name: "Customers", path: "/customers", icon: <Users size={20} /> },
     { name: "Revenue", path: "/revenue", icon: <DollarSign size={20} /> },
+    { name: "Employees", path: "/employees", icon: <Users size={20} /> },
     { name: "Settings", path: "/settings", icon: <Settings size={20} /> },
   ];
 
-
   const isFull = isExpanded || isMobileOpen;
+
+  const handleLogoutConfirm = async () => {
+    await logout();
+    setIsLogoutModalOpen(false);
+  };
 
   return (
     <>
@@ -46,7 +55,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         ${isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full md:translate-x-0"}
         ${isExpanded ? "md:w-60" : "md:w-24"}`}>
         
-        {/* BRAND HEADER FRAME (No borders) */}
+        {/* BRAND HEADER FRAME */}
         <div className="h-24 flex items-center justify-between px-6 flex-shrink-0 relative">
           <div className="w-full flex items-center justify-between">
             {isFull ? (
@@ -66,7 +75,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
           </div>
         </div>
 
-        {/* FIXED POSITION: SIDEBAR EXPAND HANDLER RIGHT AT THE CENTER */}
+        {/* EXPAND TOGGLE BUTTON */}
         {!isMobileOpen && (
           <button 
             onClick={() => setIsExpanded(!isExpanded)} 
@@ -86,7 +95,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
                 key={link.path} 
                 href={link.path} 
                 onClick={() => setIsMobileOpen(false)}
-                className={`flex items-center transition-all duration-300 relative group rounded-xl py-3.5 cursor-pointer
+                className={`flex items-center transition-all duration-300 relative group rounded-xl py-[13.5px] cursor-pointer
                   ${isActive 
                     ? "bg-brand-cream text-brand-green-dark font-black shadow-lg border-l-4 border-brand-gold" 
                     : "text-brand-cream/70 hover:text-white hover:bg-brand-green-light/40 hover:border-l-4 hover:border-brand-gold/50"} 
@@ -97,15 +106,15 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
                 </div>
                 
                 {isFull ? (
-                  <span className="text-[12px] font-bold uppercase tracking-widest whitespace-nowrap">
+                  <span className="text-[10px] md:text-[12px] font-bold uppercase tracking-widest whitespace-nowrap">
                     {link.name}
                   </span>
                 ) : (
-                  <div className="fixed left-[100px] bg-brand-cream text-brand-green-dark text-[10px] font-black px-3 py-2 rounded-md 
+                  <div className="fixed left-[100px] bg-brand-gold text-brand-green-dark text-[10px] font-black px-3 py-2 rounded-md 
                     invisible group-hover:visible opacity-0 group-hover:opacity-100 translate-x-[-10px] group-hover:translate-x-0
-                    transition-all duration-200 uppercase whitespace-nowrap z-[999] shadow-2xl border border-brand-gold/30">
+                    transition-all duration-200 uppercase whitespace-nowrap z-[999] shadow-2xl border border-brand-cream">
                     {link.name}
-                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-brand-cream rotate-45" />
+                    <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-brand-gold rotate-45" />
                   </div>
                 )}
               </Link>
@@ -116,7 +125,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         {/* SYSTEM DISCONNECT PORT */}
         <div className="p-4 flex-shrink-0">
           <button 
-            onClick={logout}
+            onClick={() => setIsLogoutModalOpen(true)}
             disabled={loggingOut}
             className={`flex items-center rounded-xl transition-all duration-300 py-3.5 relative group w-full bg-red-950/40 hover:bg-red-900/40 border border-brand-gold/20 text-red-500 hover:text-red-600 cursor-pointer disabled:opacity-50
               ${isFull ? "px-6 gap-4" : "justify-center"}`}
@@ -128,7 +137,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
             )}
 
             {isFull ? (
-              <span className="text-[12px] font-bold uppercase tracking-widest">
+              <span className="text-[10px] md:text-[12px] font-bold uppercase tracking-widest">
                 {loggingOut ? "Logging out..." : "Logout"}
               </span>
             ) : (
@@ -142,6 +151,18 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
           </button>
         </div>
       </aside>
+
+      {/* CONFIRMATION MODAL COMPONENT */}
+      <ConfirmModal 
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Confirm Logout"
+        description="Are you sure you want to log out of the management suite?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        isLoading={loggingOut}
+      />
     </>
   );
 }

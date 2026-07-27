@@ -132,7 +132,7 @@ export default function AdminLoginForm() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="w-full bg-[#032315]/40 border border-brand-gold/40 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-2xl relative space-y-6"
+            className="w-full bg-black/15 border border-brand-gold/40 p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-2xl relative space-y-6"
           >
             
             {/* 👤 TOP ROUNDED USER ICON & FORM HEADER */}
@@ -232,7 +232,7 @@ export default function AdminLoginForm() {
                     <span>Authenticating...</span>
                   </>
                 ) : (
-                  <span>Sign In</span>
+                  <span>Authenticate</span>
                 )}
               </button>
 

@@ -41,7 +41,7 @@ export default function RootLayout({
             />
             <div className="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
               <AdminHeader onMenuToggle={() => setIsMobileOpen(!isMobileOpen)} />
-              <main className="flex-1 overflow-y-auto w-full bg-gray-100 p-6">
+              <main className="flex-1 overflow-y-auto w-full bg-gray-100 ">
                 {children}
               </main>
             </div>
