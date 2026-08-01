@@ -20,11 +20,10 @@ export const useAdminAuth = () => {
       const role = user?.role || "employee";
       const username = user?.username || credentials.username;
 
-      // Save role & username for client-side filtering & cookie fallback
+      // Save verified backend role & username for client-side routing & UI
       if (typeof window !== "undefined") {
-        localStorage.setItem("user_role", role);
-        localStorage.setItem("username", username);
         document.cookie = `user_role=${role}; path=/; max-age=86400; SameSite=Lax`;
+        localStorage.setItem("username", username);
       }
 
       // Dynamic Toast based on Role

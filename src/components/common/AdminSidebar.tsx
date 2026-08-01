@@ -22,19 +22,24 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
   const pathname = usePathname();
   const { logout, loggingOut, error, setError } = useAdminLogout();
   
-  // Role state for dynamic menu visibility
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setRole(localStorage.getItem("user_role"));
+      // 🛡️ Read role safely from the cookie instead of editable localStorage
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+      };
+      
+      const cookieRole = getCookie("user_role");
+      setRole(cookieRole || "employee");
     }
   }, []);
 
-  // State for controlling Logout Modal
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
-  // Nav links with allowed roles
   const navLinks = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, roles: ["admin", "employee"] },
     { name: "Live Orders", path: "/orders", icon: <ShoppingBag size={20} />, roles: ["admin", "employee"] },
@@ -43,14 +48,13 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
     { name: "Inbox", path: "/inbox", icon: <Mail size={20} />, roles: ["admin", "employee"] }, 
     { name: "Reviews", path: "/reviews", icon: <Star size={20} />, roles: ["admin", "employee"] },
     
-    // 🔒 ADMIN-ONLY PAGES (Hidden for Employee)
+    // 🔒 ADMIN-ONLY PAGES
     { name: "Customers", path: "/customers", icon: <Users size={20} />, roles: ["admin"] },
     { name: "Revenue", path: "/revenue", icon: <DollarSign size={20} />, roles: ["admin"] },
     { name: "Employees", path: "/employees", icon: <Users size={20} />, roles: ["admin"] },
     { name: "Settings", path: "/settings", icon: <Settings size={20} />, roles: ["admin"] },
   ];
 
-  // Filter links according to active role
   const filteredNavLinks = navLinks.filter((link) => 
     !role || link.roles.includes(role)
   );
@@ -94,7 +98,6 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
           </div>
         </div>
 
-        {/* EXPAND TOGGLE BUTTON */}
         {!isMobileOpen && (
           <button 
             onClick={() => setIsExpanded(!isExpanded)} 
@@ -104,7 +107,6 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
           </button>
         )}
 
-        {/* NAVIGATION MATRIX PLATFORM */}
         <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto no-scrollbar">
           {filteredNavLinks.map((link) => {
             const isActive = pathname === link.path;
@@ -141,7 +143,6 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
           })}
         </nav>
 
-        {/* SYSTEM DISCONNECT PORT */}
         <div className="p-4 flex-shrink-0">
           <button 
             onClick={() => {
@@ -174,7 +175,6 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         </div>
       </aside>
 
-      {/* CONFIRMATION MODAL COMPONENT WITH ERROR SUPPORT */}
       <ConfirmModal 
         isOpen={isLogoutModalOpen}
         onClose={() => {

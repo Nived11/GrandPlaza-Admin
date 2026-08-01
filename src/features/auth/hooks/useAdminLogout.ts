@@ -11,10 +11,7 @@ export const useAdminLogout = () => {
 
   const clearClientSession = () => {
     if (typeof window !== "undefined") {
-      // 1. Clear LocalStorage
       localStorage.clear();
-
-      // 2. 🧹 Clear the user_role Cookie (Expire it)
       document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     }
   };
@@ -24,7 +21,6 @@ export const useAdminLogout = () => {
     setError(null);
 
     try {
-      // Call Backend Logout API to invalidate/clear HttpOnly cookies
       await adminLogoutApi();
       toast.success("Logged out successfully");
       
@@ -39,7 +35,6 @@ export const useAdminLogout = () => {
       setError(errorMessage);
       toast.error(errorMessage);
 
-      // Even if API fails, clear client side session and role cookies
       clearClientSession();
 
       setLoggingOut(false);
