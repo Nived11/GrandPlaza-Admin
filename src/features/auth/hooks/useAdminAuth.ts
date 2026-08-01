@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminLoginApi, LoginCredentials } from "../api/authApi";
 import { toast } from "sonner";
+import { extractErrorMessages } from "@/utils/extractErrorMessages";
 
 export const useAdminAuth = () => {
   const router = useRouter(); 
@@ -13,14 +14,30 @@ export const useAdminAuth = () => {
     setError(null);
 
     try {
-      await adminLoginApi(credentials);
+      const data = await adminLoginApi(credentials);
       
-      // Backend automatically sets HttpOnly cookie (or access_token)
-      toast.success("Welcome back, Admin!");
+      const user = data?.user;
+      const role = user?.role || "employee";
+      const username = user?.username || credentials.username;
+
+      // Save role & username for client-side filtering & cookie fallback
+      if (typeof window !== "undefined") {
+        localStorage.setItem("user_role", role);
+        localStorage.setItem("username", username);
+        document.cookie = `user_role=${role}; path=/; max-age=86400; SameSite=Lax`;
+      }
+
+      // Dynamic Toast based on Role
+      if (role === "admin") {
+        toast.success("Welcome back, Admin!");
+      } else {
+        toast.success(`Welcome back, ${username}!`);
+      }
+
       router.push("/");
       router.refresh();
     } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.response?.data?.message || "Invalid credentials. Access denied.";
+      const errorMessage = extractErrorMessages(err);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {

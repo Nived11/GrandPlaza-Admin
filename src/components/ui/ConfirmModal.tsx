@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export default function ConfirmModal({
@@ -23,6 +25,7 @@ export default function ConfirmModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   isLoading = false,
+  error,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
@@ -48,6 +51,23 @@ export default function ConfirmModal({
           </p>
         </div>
 
+        {/* 🚨 ERROR ALERT INSIDE MODAL */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="w-full p-2.5 bg-red-950/80 border border-red-500/50 rounded-xl flex items-center gap-2 text-left font-sans">
+                <AlertCircle size={15} className="text-red-400 shrink-0" />
+                <p className="text-red-200 text-xs font-semibold leading-snug">{error}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Action Buttons */}
         <div className="flex items-center gap-3 pt-2">
           {/* Cancel Button */}
@@ -68,7 +88,7 @@ export default function ConfirmModal({
             {isLoading ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>Processing...</span>
+                <span>Deleting...</span>
               </>
             ) : (
               <span>{confirmText}</span>

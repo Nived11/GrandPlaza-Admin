@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, X, BookIcon, Settings, Loader2
 } from "lucide-react";
 import { useAdminLogout } from "@/features/auth/hooks/useAdminLogout";
-import ConfirmModal from "@/components/ui/ConfirmModal"; // Component Path check cheyyuk
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface AdminSidebarProps {
   isExpanded: boolean;
@@ -20,29 +20,48 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, setIsMobileOpen }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { logout, loggingOut } = useAdminLogout();
+  const { logout, loggingOut, error, setError } = useAdminLogout();
   
-  // State for controlling Modal
+  // Role state for dynamic menu visibility
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setRole(localStorage.getItem("user_role"));
+    }
+  }, []);
+
+  // State for controlling Logout Modal
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
+  // Nav links with allowed roles
   const navLinks = [
-    { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} /> },
-    { name: "Live Orders", path: "/orders", icon: <ShoppingBag size={20} /> },
-    { name: "Menu", path: "/menu", icon: <Utensils size={20} /> },
-    { name: "Bookings", path: "/bookings", icon: <BookIcon size={20} /> },
-    { name: "Inbox", path: "/inbox", icon: <Mail size={20} /> }, 
-    { name: "Reviews", path: "/reviews", icon: <Star size={20} /> },
-    { name: "Customers", path: "/customers", icon: <Users size={20} /> },
-    { name: "Revenue", path: "/revenue", icon: <DollarSign size={20} /> },
-    { name: "Employees", path: "/employees", icon: <Users size={20} /> },
-    { name: "Settings", path: "/settings", icon: <Settings size={20} /> },
+    { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, roles: ["admin", "employee"] },
+    { name: "Live Orders", path: "/orders", icon: <ShoppingBag size={20} />, roles: ["admin", "employee"] },
+    { name: "Menu", path: "/menu", icon: <Utensils size={20} />, roles: ["admin", "employee"] },
+    { name: "Bookings", path: "/bookings", icon: <BookIcon size={20} />, roles: ["admin", "employee"] },
+    { name: "Inbox", path: "/inbox", icon: <Mail size={20} />, roles: ["admin", "employee"] }, 
+    { name: "Reviews", path: "/reviews", icon: <Star size={20} />, roles: ["admin", "employee"] },
+    
+    // 🔒 ADMIN-ONLY PAGES (Hidden for Employee)
+    { name: "Customers", path: "/customers", icon: <Users size={20} />, roles: ["admin"] },
+    { name: "Revenue", path: "/revenue", icon: <DollarSign size={20} />, roles: ["admin"] },
+    { name: "Employees", path: "/employees", icon: <Users size={20} />, roles: ["admin"] },
+    { name: "Settings", path: "/settings", icon: <Settings size={20} />, roles: ["admin"] },
   ];
+
+  // Filter links according to active role
+  const filteredNavLinks = navLinks.filter((link) => 
+    !role || link.roles.includes(role)
+  );
 
   const isFull = isExpanded || isMobileOpen;
 
   const handleLogoutConfirm = async () => {
-    await logout();
-    setIsLogoutModalOpen(false);
+    const success = await logout();
+    if (success) {
+      setIsLogoutModalOpen(false);
+    }
   };
 
   return (
@@ -87,7 +106,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
 
         {/* NAVIGATION MATRIX PLATFORM */}
         <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto no-scrollbar">
-          {navLinks.map((link) => {
+          {filteredNavLinks.map((link) => {
             const isActive = pathname === link.path;
 
             return (
@@ -125,7 +144,10 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         {/* SYSTEM DISCONNECT PORT */}
         <div className="p-4 flex-shrink-0">
           <button 
-            onClick={() => setIsLogoutModalOpen(true)}
+            onClick={() => {
+              if (setError) setError(null);
+              setIsLogoutModalOpen(true);
+            }}
             disabled={loggingOut}
             className={`flex items-center rounded-xl transition-all duration-300 py-3.5 relative group w-full bg-red-950/40 hover:bg-red-900/40 border border-brand-gold/20 text-red-500 hover:text-red-600 cursor-pointer disabled:opacity-50
               ${isFull ? "px-6 gap-4" : "justify-center"}`}
@@ -152,16 +174,20 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
         </div>
       </aside>
 
-      {/* CONFIRMATION MODAL COMPONENT */}
+      {/* CONFIRMATION MODAL COMPONENT WITH ERROR SUPPORT */}
       <ConfirmModal 
         isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
+        onClose={() => {
+          setIsLogoutModalOpen(false);
+          if (setError) setError(null);
+        }}
         onConfirm={handleLogoutConfirm}
         title="Confirm Logout"
         description="Are you sure you want to log out of the management suite?"
         confirmText="Logout"
         cancelText="Cancel"
         isLoading={loggingOut}
+        error={error}
       />
     </>
   );

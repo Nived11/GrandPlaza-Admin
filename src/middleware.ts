@@ -10,15 +10,26 @@ export function middleware(request: NextRequest) {
     request.cookies.get('refresh_token')?.value || 
     request.cookies.get('refresh')?.value;
 
+  const userRole = request.cookies.get('user_role')?.value;
+
   const isAuthenticated = Boolean(hasAccessToken || hasRefreshToken);
 
-  const isLoginPage = request.nextUrl.pathname === '/login';
+  const { pathname } = request.nextUrl;
+  const isLoginPage = pathname === '/login';
 
+  // 1. Not Authenticated -> Redirect to Login
   if (!isAuthenticated && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // 2. Authenticated & Trying to access Login -> Redirect to Home
   if (isAuthenticated && isLoginPage) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // 🔒 3. Role Protection: If Employee tries to access Admin-Only pages directly
+  const adminOnlyPaths = ['/customers','/revenue', '/employees', '/settings'];
+  if (isAuthenticated && userRole === 'employee' && adminOnlyPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
