@@ -88,7 +88,7 @@ export default function ConfirmModal({
             {isLoading ? (
               <>
                 <Loader2 size={14} className="animate-spin" />
-                <span>Deleting...</span>
+                <span>processing...</span>
               </>
             ) : (
               <span>{confirmText}</span>
