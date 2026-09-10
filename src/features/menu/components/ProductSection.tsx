@@ -20,20 +20,17 @@ const initialFormState = {
   has_variants: false,
   actual_price: "",
   offer_price: "",
-  quantity: "",
   is_available: true,
   variants: [],
   image: null,
-  banner_image: null,
   previewUrl: null,
-  bannerPreviewUrl: null,
 };
 
 const ProductSection = () => {
   const [activeSection, setActiveSection] = useState("All");
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLowStock, setIsLowStock] = useState(false);
+  // 🌟 Removed isLowStock state
   const [showUnavailable, setShowUnavailable] = useState(false);
 
   const { categoryList, fetchCategories } = useCategory();
@@ -43,7 +40,7 @@ const ProductSection = () => {
     page, setPage, hasNextPage, hasPreviousPage,
     addMenuItem, updateMenuItem, deleteMenuItem
   } = useMenu({ 
-    activeSection, activeCategory, searchQuery, isLowStock, showUnavailable 
+    activeSection, activeCategory, searchQuery, showUnavailable 
   });
   
   // Local Form & Modal States
@@ -62,6 +59,14 @@ const ProductSection = () => {
     setEditingId(null);
   };
 
+  // 🌟 Clear All Filters Function
+  const handleClearFilters = () => {
+    setActiveSection("All");
+    setActiveCategory("All");
+    setSearchQuery("");
+    setShowUnavailable(false);
+  };
+
   const handleOpenAdd = () => {
     if (categoryList.length === 0) fetchCategories();
     resetForm();
@@ -73,20 +78,15 @@ const ProductSection = () => {
     setFormData({
       ...item,
       previewUrl: item.image || null,
-      bannerPreviewUrl: item.banner_image || null,
     });
     setEditingId(item.id);
     setIsModalOpen(true);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, type: "product" | "banner") => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, type: "product") => {
     const file = e.target.files?.[0];
     if (file) {
-      if (type === "product") {
-        setFormData({ ...formData, image: file, previewUrl: URL.createObjectURL(file) });
-      } else {
-        setFormData({ ...formData, banner_image: file, bannerPreviewUrl: URL.createObjectURL(file) });
-      }
+      setFormData({ ...formData, image: file, previewUrl: URL.createObjectURL(file) });
     }
   };
 
@@ -142,10 +142,9 @@ const ProductSection = () => {
               setActiveCategory={setActiveCategory}
               searchQuery={searchQuery} 
               setSearchQuery={setSearchQuery}
-              isLowStock={isLowStock}
-              setIsLowStock={setIsLowStock}
               showUnavailable={showUnavailable}
               setShowUnavailable={setShowUnavailable}
+              onClearFilters={handleClearFilters} // 🌟 Passed the clear function here
             />
           </div>
           

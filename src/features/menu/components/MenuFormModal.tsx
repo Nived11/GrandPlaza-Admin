@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ImageIcon, ChevronDown, X, Loader2, Eye, EyeOff, Plus, Trash2, UploadCloud, Edit2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronDown, X, Loader2, Eye, EyeOff, Plus, Trash2, UploadCloud, Edit2 } from "lucide-react";
 
 const MenuFormModal = ({
   formData, setFormData, onClose, onSubmit, editingId,
   categories, fileInputRef, handleImageChange, loading,
 }: any) => {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_CHARS = 150;
   const currentChars = formData.description ? formData.description.length : 0;
@@ -41,7 +40,7 @@ const MenuFormModal = ({
   ];
 
   const handleAddVariant = () => {
-    setFormData({ ...formData, variants: [...formData.variants, { size_name: "", actual_price: "", offer_price: "", quantity: "", is_available: true }] });
+    setFormData({ ...formData, variants: [...formData.variants, { size_name: "", actual_price: "", offer_price: "", is_available: true }] });
   };
   const handleRemoveVariant = (index: number) => {
     setFormData({ ...formData, variants: formData.variants.filter((_: any, i: number) => i !== index) });
@@ -79,44 +78,25 @@ const MenuFormModal = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar overscroll-contain will-change-transform">
           <form id="product-form" onSubmit={onSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
               
               {/* Left Side: Images & Dietary */}
               <div className="md:col-span-4 space-y-6 md:sticky md:top-0 h-fit">
                 
-                <AnimatePresence>
-                  {formData.section === "BANNER" && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-1.5">
-                      <label className={labelClass}>Banner Image</label>
-                      <div
-                        onClick={() => !loading && bannerInputRef.current?.click()}
-                        className="relative aspect-[16/6] rounded-xl border border-dashed border-brand-gold bg-transparent flex flex-col items-center justify-center cursor-pointer overflow-hidden hover:bg-white/5 transition-all"
-                      >
-                        {formData.bannerPreviewUrl ? (
-                          <img src={formData.bannerPreviewUrl} className="w-full h-full object-cover" alt="Banner" />
-                        ) : (
-                          <div className="text-center p-2 opacity-80">
-                            <UploadCloud size={20} className="text-brand-gold mx-auto mb-1" />
-                            <p className="text-[8px] font-black text-brand-gold uppercase tracking-widest">Banner Image</p>
-                          </div>
-                        )}
-                        <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, "banner")} disabled={loading} />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* 🌟 Banner Image Uploader removed completely */}
 
                 <div className="space-y-1.5">
                   <label className={labelClass}>Product Image</label>
                   <div
                     onClick={() => !loading && fileInputRef.current?.click()}
-                    className={`relative ${formData.section === "BANNER" ? "aspect-[4/3]" : "aspect-square"} rounded-2xl border border-dashed border-brand-gold bg-transparent flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:bg-white/5 transition-all duration-300`}
+                    // 🌟 aspect-square fixed for all sections since banner is removed
+                    className={`relative aspect-square rounded-2xl border border-dashed border-brand-gold bg-transparent flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:bg-white/5 transition-all duration-300`}
                   >
                     {formData.previewUrl ? (
                       <>
-                        <img src={formData.previewUrl} className="w-full h-full object-cover" alt="Preview" />
+                        <img src={formData.previewUrl} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="Preview" />
                         <div className="absolute inset-0 bg-brand-green-dark/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                            <Edit2 size={24} className="text-brand-gold" />
                         </div>
@@ -162,9 +142,9 @@ const MenuFormModal = ({
                       if (!loading) {
                         setFormData({
                           ...formData, has_variants: !formData.has_variants,
-                          actual_price: "", offer_price: "", quantity: "",
+                          actual_price: "", offer_price: "",
                           variants: formData.variants.length === 0 && !formData.has_variants 
-                            ? [{ size_name: "", actual_price: "", offer_price: "", quantity: "", is_available: true }] : formData.variants
+                            ? [{ size_name: "", actual_price: "", offer_price: "", is_available: true }] : formData.variants
                         });
                       }
                     }}
@@ -250,7 +230,7 @@ const MenuFormModal = ({
                                 <Trash2 size={12} />
                               </button>
                             )}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                               <div className="space-y-1.5">
                                 <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Size/Name</label>
                                 <input disabled={loading} required placeholder="e.g. FULL" className={`${inputClass} !py-2`} value={variant.size_name} onChange={(e) => handleVariantChange(index, "size_name", e.target.value)} />
@@ -263,10 +243,6 @@ const MenuFormModal = ({
                                 <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Offer Price (₹)</label>
                                 <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} !py-2 ${isVariantPriceInvalid ? "border-red-400 bg-red-900/20" : ""}`} value={variant.offer_price || ""} onChange={(e) => handleVariantChange(index, "offer_price", e.target.value)} />
                               </div>
-                              <div className="space-y-1.5">
-                                <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Stock</label>
-                                <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} required placeholder="0" className={`${inputClass} !py-2`} value={variant.quantity} onChange={(e) => handleVariantChange(index, "quantity", e.target.value)} />
-                              </div>
                             </div>
                           </div>
                         );
@@ -276,7 +252,7 @@ const MenuFormModal = ({
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-1.5">
                         <label className={labelClass}>MRP (₹)</label>
                         <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} required={!formData.has_variants} placeholder="0" className={inputClass} value={formData.actual_price} onChange={(e) => setFormData({ ...formData, actual_price: e.target.value })} />
@@ -285,10 +261,6 @@ const MenuFormModal = ({
                         <label className={labelClass}>Offer Price (₹)</label>
                         <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} ${isPriceInvalid ? "border-red-400 bg-red-900/20" : ""}`} value={formData.offer_price} onChange={(e) => setFormData({ ...formData, offer_price: e.target.value })} />
                         {isPriceInvalid && <p className="text-[8px] text-red-400 font-black uppercase ml-1 mt-1">Must be less than MRP</p>}
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className={labelClass}>Stock</label>
-                        <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} required={!formData.has_variants} placeholder="0" className={inputClass} value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} />
                       </div>
                     </div>
                   )}

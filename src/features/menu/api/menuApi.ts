@@ -4,7 +4,6 @@ export interface VariantPayload {
   size_name: string;
   actual_price: string;
   offer_price?: string;
-  quantity: string | number;
   is_available: boolean;
 }
 
@@ -17,14 +16,12 @@ export interface MenuItemPayload {
   has_variants: boolean;
   actual_price?: string | null;
   offer_price?: string | null;
-  quantity?: string | number;
   is_available: boolean;
   variants?: VariantPayload[];
   image?: File | null | string;
-  banner_image?: File | null | string;
+  // 🌟 banner_image removed entirely
 }
 
-// Helper function to build FormData
 const buildFormData = (data: Partial<MenuItemPayload>) => {
   const formData = new FormData();
   
@@ -37,22 +34,20 @@ const buildFormData = (data: Partial<MenuItemPayload>) => {
   
   if (data.actual_price !== undefined && data.actual_price !== null) formData.append("actual_price", data.actual_price.toString());
   if (data.offer_price !== undefined && data.offer_price !== null) formData.append("offer_price", data.offer_price.toString());
-  if (data.quantity !== undefined) formData.append("quantity", data.quantity.toString());
+  
   if (data.is_available !== undefined) formData.append("is_available", String(data.is_available));
 
-  // Variants array stringify ചെയ്ത് അയക്കണം
   if (data.variants) {
     formData.append("variants", JSON.stringify(data.variants));
   }
 
-  // ഫയൽ ആണെങ്കിൽ മാത്രം അപ്പൻഡ് ചെയ്യുക
   if (data.image instanceof File) formData.append("image", data.image);
-  if (data.banner_image instanceof File) formData.append("banner_image", data.banner_image);
+  // 🌟 banner_image appender removed from here
 
   return formData;
 };
 
-// 🟢 Get Menu Items List (With Pagination & Filters)
+// 🟢 Get Menu Items List
 export const getMenuItemsApi = async (params: any = {}) => {
   const response = await axiosInstance.get("/menu/admin/menu-items", { params });
   return response.data;

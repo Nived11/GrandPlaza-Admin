@@ -15,8 +15,7 @@ interface UseMenuFilters {
   activeSection?: string;
   activeCategory?: string;
   searchQuery?: string;
-  isLowStock?: boolean;
-  showUnavailable?: boolean;
+  showUnavailable?: boolean; // 🌟 Low stock parameter completely removed
 }
 
 export function useMenu(filters: UseMenuFilters = {}) {
@@ -29,9 +28,9 @@ export function useMenu(filters: UseMenuFilters = {}) {
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
   // Loading & Error States
-  const [isLoading, setIsLoading] = useState(true); // Initial load
-  const [fetching, setFetching] = useState(false); // Background refetch/pagination
-  const [actionLoading, setActionLoading] = useState(false); // Add/Edit/Delete
+  const [isLoading, setIsLoading] = useState(true); 
+  const [fetching, setFetching] = useState(false); 
+  const [actionLoading, setActionLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
 
   const fetchMenuItems = async (currentPage = page) => {
@@ -40,18 +39,19 @@ export function useMenu(filters: UseMenuFilters = {}) {
     setError(null);
 
     try {
-      // Build query params
       const params: any = { page: currentPage };
       
+      // 🌟 API ഡോക്കുമെൻ്റേഷൻ പോലെ കറക്റ്റ് ആയി മാപ്പ് ചെയ്തു
       if (filters.searchQuery) params.search = filters.searchQuery;
       if (filters.activeSection && filters.activeSection !== "All") params.section = filters.activeSection;
       if (filters.activeCategory && filters.activeCategory !== "All") params.category = filters.activeCategory;
-      if (filters.isLowStock) params.low_stock = true; // Assuming backend handles this param
-      if (filters.showUnavailable) params.is_available = false; // Or whatever backend expects
+      
+      // 🌟 "Disabled Items Toggle: ?available=false" (അല്ലെങ്കിൽ ?available=true)
+      // Toggle ഓൺ ആക്കിയാൽ Disabled Items (available=false) വരും. അല്ലെങ്കിൽ നോർമൽ (available=true) വരും.
+      params.available = !filters.showUnavailable;
 
       const data = await getMenuItemsApi(params);
       
-      // API returns paginated structure: { count, next, previous, results }
       setItems(data.results || []);
       setTotalCount(data.count || 0);
       setHasNextPage(!!data.next);
@@ -66,17 +66,14 @@ export function useMenu(filters: UseMenuFilters = {}) {
     }
   };
 
-  // Re-fetch when filters or page change
   useEffect(() => {
-    // Reset to page 1 if filters change (except page change)
     setPage(1);
-  }, [filters.activeSection, filters.activeCategory, filters.searchQuery, filters.isLowStock, filters.showUnavailable]);
+  }, [filters.activeSection, filters.activeCategory, filters.searchQuery, filters.showUnavailable]);
 
-  // Actually fetch data when page changes
   useEffect(() => {
     fetchMenuItems(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filters.activeSection, filters.activeCategory, filters.searchQuery, filters.isLowStock, filters.showUnavailable]);
+  }, [page, filters.activeSection, filters.activeCategory, filters.searchQuery, filters.showUnavailable]);
 
 
   const addMenuItem = async (data: MenuItemPayload) => {
@@ -84,7 +81,7 @@ export function useMenu(filters: UseMenuFilters = {}) {
     try {
       await createMenuItemApi(data);
       toast.success("Menu item created successfully!");
-      fetchMenuItems(page); // Refresh list
+      fetchMenuItems(page); 
       return true;
     } catch (err: any) {
       const msg = extractErrorMessages(err);
@@ -100,7 +97,7 @@ export function useMenu(filters: UseMenuFilters = {}) {
     try {
       await updateMenuItemApi(id, data);
       toast.success("Menu item updated successfully!");
-      fetchMenuItems(page); // Refresh list
+      fetchMenuItems(page); 
       return true;
     } catch (err: any) {
       const msg = extractErrorMessages(err);
@@ -116,7 +113,7 @@ export function useMenu(filters: UseMenuFilters = {}) {
     try {
       const res = await deleteMenuItemApi(id);
       toast.success(res.message || "Menu item deleted successfully!");
-      fetchMenuItems(page); // Refresh list
+      fetchMenuItems(page); 
       return true;
     } catch (err: any) {
       const msg = extractErrorMessages(err);

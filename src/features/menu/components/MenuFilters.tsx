@@ -1,12 +1,12 @@
 import React from "react";
-import { ChevronDown, Search, AlertCircle, EyeOff } from "lucide-react";
+import { ChevronDown, Search, EyeOff, FilterX } from "lucide-react";
 
 const MenuFilters = ({ 
   sections, activeSection, setActiveSection, 
   categories, activeCategory, setActiveCategory,
   searchQuery, setSearchQuery, 
-  isLowStock, setIsLowStock,
-  showUnavailable, setShowUnavailable
+  showUnavailable, setShowUnavailable,
+  onClearFilters // 🌟 പുതിയ Clear Filters Function
 }: any) => (
   <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 w-full">
     
@@ -28,7 +28,7 @@ const MenuFilters = ({
         <select 
           value={activeSection} 
           onChange={(e) => setActiveSection(e.target.value)} 
-          className="w-full appearance-none bg-white border border-brand-gold/40 rounded-xl py-3 px-4 text-xs font-bold outline-none shadow-sm text-brand-green-dark"
+          className="w-full appearance-none bg-white border border-brand-gold/40 rounded-xl py-3 px-4 text-xs font-bold outline-none shadow-sm text-brand-green-dark cursor-pointer"
         >
           {sections.map((sec: string) => <option key={sec} value={sec}>{sec}</option>)}
         </select>
@@ -40,7 +40,7 @@ const MenuFilters = ({
         <select 
           value={activeCategory} 
           onChange={(e) => setActiveCategory(e.target.value)} 
-          className="w-full appearance-none bg-white border border-brand-gold/40 rounded-xl py-3 px-4 text-xs font-bold outline-none shadow-sm text-brand-green-dark"
+          className="w-full appearance-none bg-white border border-brand-gold/40 rounded-xl py-3 px-4 text-xs font-bold outline-none shadow-sm text-brand-green-dark cursor-pointer"
         >
           <option value="All">All Categories</option>
           {categories?.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -48,25 +48,8 @@ const MenuFilters = ({
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-green-dark/50 pointer-events-none" size={14} />
       </div>
 
-      {/* Toggles */}
+      {/* Toggles & Clear Filters */}
       <div className="flex items-center gap-2 w-full sm:w-auto">
-        <button
-          onClick={() => setIsLowStock(!isLowStock)}
-          className={`cursor-pointer flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all shadow-sm ${
-            isLowStock ? "bg-brand-green-dark/5 border-brand-green-dark" : "bg-white border-brand-gold/40"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <AlertCircle size={14} className={isLowStock ? "text-brand-green-dark" : "text-gray-400"} />
-            <span className={`text-[10px] font-black uppercase tracking-tight ${isLowStock ? "text-brand-green-dark" : "text-gray-500"}`}>
-              Low Stock
-            </span>
-          </div>
-          <div className={`w-8 h-4.5 rounded-full p-0.5 transition-colors duration-200 ${isLowStock ? "bg-brand-green-dark" : "bg-gray-200"}`}>
-            <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${isLowStock ? "translate-x-3.5" : "translate-x-0"}`} />
-          </div>
-        </button>
-
         <button
           onClick={() => setShowUnavailable(!showUnavailable)}
           className={`cursor-pointer flex-1 sm:flex-none flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border transition-all shadow-sm ${
@@ -83,6 +66,18 @@ const MenuFilters = ({
             <div className={`w-3.5 h-3.5 bg-white rounded-full shadow-sm transform transition-transform duration-200 ${showUnavailable ? "translate-x-3.5" : "translate-x-0"}`} />
           </div>
         </button>
+
+        {/* 🌟 Clear Filters Button (Show only if any filter is active) */}
+        {(searchQuery || activeSection !== "All" || activeCategory !== "All" || showUnavailable) && (
+          <button
+            onClick={onClearFilters}
+            className="cursor-pointer flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 transition-all shadow-sm"
+            title="Clear All Filters"
+          >
+            <FilterX size={14} />
+            <span className="text-[10px] font-black uppercase tracking-tight hidden sm:block">Clear</span>
+          </button>
+        )}
       </div>
     </div>
   </div>

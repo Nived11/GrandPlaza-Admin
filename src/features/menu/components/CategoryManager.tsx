@@ -87,7 +87,7 @@ export default function CategoryManager() {
       {/* 🟡 LOADING STATE */}
       {loading ? (
         <div className="flex gap-4 sm:gap-6 overflow-hidden py-4 px-2 sm:px-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
+          {[1, 2, 3, 4, 5, 6,7,8,9,10,].map((n) => (
             <div key={n} className="flex flex-col items-center gap-2 animate-pulse min-w-fit">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-slate-200 border-4 border-white shadow-sm" />
               <div className="h-2.5 w-14 bg-slate-200 rounded-full mt-1" />
