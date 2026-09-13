@@ -64,6 +64,18 @@ export const createMenuItemApi = async (data: MenuItemPayload) => {
 
 // ✏️ Update Menu Item
 export const updateMenuItemApi = async (id: number | string, data: Partial<MenuItemPayload>) => {
+  // പുതിയ ഫോട്ടോ അപ്‌ലോഡ് ചെയ്തിട്ടില്ലെങ്കിൽ direct JSON അയക്കുക (വേരിയന്റുകൾ string ആവാതെ array ആയിത്തന്നെ സെർവറിലേക്ക് പോകും)
+  if (!(data.image instanceof File)) {
+    const payload: any = { ...data };
+    delete payload.previewUrl;
+    if (typeof payload.image === "string") {
+      delete payload.image;
+    }
+    const response = await axiosInstance.patch(`/menu/admin/menu-items/${id}`, payload);
+    return response.data;
+  }
+
+  // പുതിയ ഫോട്ടോ ഉള്ളപ്പോൾ മാത്രം FormData
   const formData = buildFormData(data);
   const response = await axiosInstance.patch(`/menu/admin/menu-items/${id}`, formData, {
     headers: { "Content-Type": "multipart/form-data" },

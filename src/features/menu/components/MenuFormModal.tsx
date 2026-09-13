@@ -57,17 +57,30 @@ const MenuFormModal = ({
   ];
 
   const handleAddVariant = () => {
-    setFormData({ ...formData, variants: [...formData.variants, { size_name: "", actual_price: "", offer_price: "", is_available: true }] });
+    const currentVariants = Array.isArray(formData.variants) ? formData.variants : [];
+    setFormData({ 
+      ...formData, 
+      variants: [
+        ...currentVariants, 
+        { size_name: "", actual_price: "", offer_price: "", is_available: true }
+      ] 
+    });
   };
   
   const handleRemoveVariant = (index: number) => {
-    setFormData({ ...formData, variants: formData.variants.filter((_: any, i: number) => i !== index) });
+    const currentVariants = Array.isArray(formData.variants) ? formData.variants : [];
+    setFormData({ 
+      ...formData, 
+      variants: currentVariants.filter((_: any, i: number) => i !== index) 
+    });
   };
   
   const handleVariantChange = (index: number, field: string, value: any) => {
-    const updatedVariants = [...formData.variants];
-    updatedVariants[index][field] = value;
-    setFormData({ ...formData, variants: updatedVariants });
+    const currentVariants = Array.isArray(formData.variants) ? [...formData.variants] : [];
+    if (currentVariants[index]) {
+      currentVariants[index] = { ...currentVariants[index], [field]: value };
+      setFormData({ ...formData, variants: currentVariants });
+    }
   };
 
   // 🌟 Drag & Drop Logic
@@ -207,16 +220,23 @@ const MenuFormModal = ({
                   <div
                     onClick={() => {
                       if (!loading) {
+                        const willHaveVariants = !formData.has_variants;
+                        const existingActual = formData.actual_price || "";
+                        const existingOffer = formData.offer_price || "";
+
+                        // 🌟 മുന്നേ ഉള്ള Price നഷ്ടപ്പെടാതെ ആദ്യ വേരിയന്റിലേക്ക് കൊടുക്കുന്നു
+                        const updatedVariants = (Array.isArray(formData.variants) && formData.variants.length > 0)
+                          ? formData.variants
+                          : [
+                              { size_name: "Qtr", actual_price: existingActual, offer_price: existingOffer, is_available: true },
+                              { size_name: "Half", actual_price: "", offer_price: "", is_available: true },
+                              { size_name: "Full", actual_price: "", offer_price: "", is_available: true }
+                            ];
+
                         setFormData({
-                          ...formData, has_variants: !formData.has_variants,
-                          actual_price: "", offer_price: "",
-                          variants: formData.variants.length === 0 && !formData.has_variants 
-                            ? [
-                                { size_name: "QTR", actual_price: "", offer_price: "", is_available: true },
-                                { size_name: "HALF", actual_price: "", offer_price: "", is_available: true },
-                                { size_name: "FULL", actual_price: "", offer_price: "", is_available: true }
-                              ] 
-                            : formData.variants
+                          ...formData,
+                          has_variants: willHaveVariants,
+                          variants: updatedVariants,
                         });
                       }
                     }}

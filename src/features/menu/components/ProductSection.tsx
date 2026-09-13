@@ -9,6 +9,7 @@ import MenuGrid from "./MenuGrid";
 import MenuFormModal from "./MenuFormModal";
 import ProductCardSkeleton from "./ProductCardSkeleton"; 
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Pagination from "@/components/ui/Pagination"; // 👈 Import added
 import { AnimatePresence } from "framer-motion";
 
 const initialFormState = {
@@ -184,59 +185,16 @@ const ProductSection = () => {
             />
           </div>
 
-          {/* 🟢 PAGINATION */}
-          <div className="flex flex-col items-center justify-center gap-5 py-10 border-t border-brand-gold/20">
-            <div className="flex items-center gap-2 md:gap-3">
-              <button 
-                onClick={() => { setPage(1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                disabled={page === 1 || fetching}
-                className="p-2.5 rounded-xl border border-brand-gold/40 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-brand-green-dark hover:text-brand-gold text-brand-green-dark transition-all cursor-pointer shadow-sm"
-              >
-                <ChevronsLeft size={16} strokeWidth={2.5} />
-              </button>
-
-              <button 
-                onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                disabled={!hasPreviousPage || fetching}
-                className="p-2.5 rounded-xl border border-brand-gold/40 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-brand-green-dark hover:text-brand-gold text-brand-green-dark transition-all cursor-pointer shadow-sm"
-              >
-                <ChevronLeft size={16} strokeWidth={2.5} />
-              </button>
-
-              <div className="relative min-w-[120px] flex items-center justify-center bg-brand-green-dark border border-brand-gold px-6 py-2.5 rounded-xl shadow-md">
-                {fetching ? (
-                  <div className="flex items-center gap-2 text-brand-gold">
-                    <RefreshCcw size={12} className="animate-spin" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Loading</span>
-                  </div>
-                ) : (
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">
-                    Page {page} of {Math.ceil(totalCount / 20) || 1}
-                  </span>
-                )}
-              </div>
-
-              <button 
-                onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                disabled={!hasNextPage || fetching}
-                className="p-2.5 rounded-xl border border-brand-gold/40 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-brand-green-dark hover:text-brand-gold text-brand-green-dark transition-all cursor-pointer shadow-sm"
-              >
-                <ChevronRight size={16} strokeWidth={2.5} />
-              </button>
-
-              <button 
-                onClick={() => { 
-                  const lastPage = Math.ceil(totalCount / 20);
-                  setPage(lastPage); 
-                  window.scrollTo({ top: 0, behavior: "smooth" }); 
-                }}
-                disabled={!hasNextPage || fetching}
-                className="p-2.5 rounded-xl border border-brand-gold/40 disabled:opacity-50 disabled:cursor-not-allowed bg-white hover:bg-brand-green-dark hover:text-brand-gold text-brand-green-dark transition-all cursor-pointer shadow-sm"
-              >
-                <ChevronsRight size={16} strokeWidth={2.5} />
-              </button>
-            </div>
-          </div>
+          {/* 🟢 REUSABLE PAGINATION */}
+          <Pagination
+            page={page}
+            totalCount={totalCount}
+            pageSize={20}
+            onPageChange={setPage}
+            isLoading={fetching}
+            hasNextPage={hasNextPage}
+            hasPreviousPage={hasPreviousPage}
+          />
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-brand-gold/30 rounded-3xl text-center bg-white/50">
