@@ -41,9 +41,22 @@ export default function CategoryForm({ isOpen, onClose, onSave, initialData, loa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    
     const success = await onSave({ name, image: imageFile });
+    
     if (success) {
-      onClose();
+      if (initialData) {
+        // 🌟 എഡിറ്റ് (Edit) മോഡ് ആണെങ്കിൽ സേവ് കഴിഞ്ഞാൽ ഫോം ക്ലോസ് ആകും
+        onClose();
+      } else {
+        // 🌟 ആഡ് (Add) മോഡ് ആണെങ്കിൽ ക്ലോസ് ആവില്ല, പകരം ഫോം ക്ലിയർ ആകും
+        setName("");
+        setImageFile(null);
+        setImagePreview(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""; 
+        }
+      }
     }
   };
 
@@ -57,7 +70,6 @@ export default function CategoryForm({ isOpen, onClose, onSave, initialData, loa
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          {/* Backdrop: ലോഡിങ് സമയത്ത് പുറത്ത് ക്ലിക്ക് ചെയ്താൽ ക്ലോസ് ആകില്ല */}
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -75,7 +87,6 @@ export default function CategoryForm({ isOpen, onClose, onSave, initialData, loa
           >
             {/* Header */}
             <div className="p-5 text-center relative border-b border-brand-gold/20">
-              {/* Close ബട്ടൺ ലോഡിങ് സമയത്ത് ഡിസേബിൾ ആക്കി */}
               <button 
                 onClick={onClose} 
                 disabled={loading}
@@ -93,7 +104,6 @@ export default function CategoryForm({ isOpen, onClose, onSave, initialData, loa
               
               {/* Image Upload */}
               <div className="flex flex-col items-center gap-2">
-                {/* ലോഡിങ് സമയത്ത് ഇമേജ് മാറ്റാനും പറ്റില്ല */}
                 <input 
                   type="file" 
                   accept="image/*" 
@@ -140,7 +150,6 @@ export default function CategoryForm({ isOpen, onClose, onSave, initialData, loa
 
               {/* Buttons */}
               <div className="flex gap-3 pt-2">
-                {/* Cancel ബട്ടൺ ലോഡിങ് സമയത്ത് ഡിസേബിൾ ആക്കി */}
                 <button 
                   type="button" 
                   onClick={onClose} 

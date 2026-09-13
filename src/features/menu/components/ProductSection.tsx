@@ -13,10 +13,10 @@ import { AnimatePresence } from "framer-motion";
 
 const initialFormState = {
   category: "",
-  section: "BEST SELLER",
+  section: "OTHERS",         // 🌟 Default to OTHERS
   name: "",
   description: "",
-  dietary_preference: "VEG",
+  dietary_preference: "NON-VEG", // 🌟 Default changed to NON-VEG
   has_variants: false,
   actual_price: "",
   offer_price: "",

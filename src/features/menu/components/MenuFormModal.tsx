@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, X, Loader2, Eye, EyeOff, Plus, Trash2, UploadCloud, Edit2 } from "lucide-react";
 
 const MenuFormModal = ({
@@ -9,6 +9,7 @@ const MenuFormModal = ({
   categories, fileInputRef, handleImageChange, loading,
 }: any) => {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [isDragging, setIsDragging] = useState(false);
 
   const MAX_CHARS = 150;
   const currentChars = formData.description ? formData.description.length : 0;
@@ -17,6 +18,22 @@ const MenuFormModal = ({
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = "unset"; };
   }, []);
+
+  // 🌟 Copy-Paste Image Logic
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      if (loading) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      const file = e.clipboardData?.files?.[0];
+      if (file && file.type.startsWith("image/")) {
+        setFormData((prev: any) => ({ ...prev, image: file, previewUrl: URL.createObjectURL(file) }));
+      }
+    };
+    window.addEventListener("paste", handleGlobalPaste);
+    return () => window.removeEventListener("paste", handleGlobalPaste);
+  }, [loading, setFormData]);
 
   const stopScrollChange = (e: any) => e.target.blur();
 
@@ -42,13 +59,46 @@ const MenuFormModal = ({
   const handleAddVariant = () => {
     setFormData({ ...formData, variants: [...formData.variants, { size_name: "", actual_price: "", offer_price: "", is_available: true }] });
   };
+  
   const handleRemoveVariant = (index: number) => {
     setFormData({ ...formData, variants: formData.variants.filter((_: any, i: number) => i !== index) });
   };
+  
   const handleVariantChange = (index: number, field: string, value: any) => {
     const updatedVariants = [...formData.variants];
     updatedVariants[index][field] = value;
     setFormData({ ...formData, variants: updatedVariants });
+  };
+
+  // 🌟 Drag & Drop Logic
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (loading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      setFormData({ ...formData, image: file, previewUrl: URL.createObjectURL(file) });
+    }
+  };
+
+  // 🌟 Remove Image Logic
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation(); // ക്ലിക്ക് ചെയ്യുമ്പോൾ അപ്‌ലോഡ് വിൻഡോ വരാതിരിക്കാൻ
+    if (loading) return;
+    setFormData({ ...formData, image: null, previewUrl: null });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -85,26 +135,43 @@ const MenuFormModal = ({
               {/* Left Side: Images & Dietary */}
               <div className="md:col-span-4 space-y-6 md:sticky md:top-0 h-fit">
                 
-                {/* 🌟 Banner Image Uploader removed completely */}
-
                 <div className="space-y-1.5">
                   <label className={labelClass}>Product Image</label>
                   <div
                     onClick={() => !loading && fileInputRef.current?.click()}
-                    // 🌟 aspect-square fixed for all sections since banner is removed
-                    className={`relative aspect-square rounded-2xl border border-dashed border-brand-gold bg-transparent flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:bg-white/5 transition-all duration-300`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`relative aspect-square rounded-2xl border border-dashed transition-all duration-300 flex flex-col items-center justify-center cursor-pointer overflow-hidden group ${
+                      isDragging ? "border-brand-gold bg-brand-gold/20 scale-[1.02]" : "border-brand-gold bg-transparent hover:bg-white/5"
+                    }`}
                   >
                     {formData.previewUrl ? (
                       <>
                         <img src={formData.previewUrl} loading="lazy" decoding="async" className="w-full h-full object-cover" alt="Preview" />
-                        <div className="absolute inset-0 bg-brand-green-dark/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        
+                        {/* 🌟 Static Remove Button (Top Right) */}
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          disabled={loading}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors shadow-lg z-20"
+                          title="Remove Image"
+                        >
+                          <X size={14} strokeWidth={3} />
+                        </button>
+
+                        <div className="absolute inset-0 bg-brand-green-dark/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
                            <Edit2 size={24} className="text-brand-gold" />
                         </div>
                       </>
                     ) : (
-                      <div className="text-center p-4 opacity-80">
-                        <UploadCloud size={32} className="text-brand-gold mx-auto mb-2" />
-                        <p className="text-[10px] font-black text-brand-gold uppercase tracking-widest">Upload Photo</p>
+                      <div className="text-center p-4 opacity-80 pointer-events-none">
+                        <UploadCloud size={32} className={`mx-auto mb-2 transition-colors ${isDragging ? "text-white" : "text-brand-gold"}`} />
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${isDragging ? "text-white" : "text-brand-gold"}`}>
+                          {isDragging ? "Drop Image Here" : "Upload Photo"}
+                        </p>
+                        <p className="text-[7px] text-brand-gold/60 uppercase tracking-widest mt-1">or Drag & Drop / Paste</p>
                       </div>
                     )}
                     <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleImageChange(e, "product")} disabled={loading} />
@@ -144,7 +211,12 @@ const MenuFormModal = ({
                           ...formData, has_variants: !formData.has_variants,
                           actual_price: "", offer_price: "",
                           variants: formData.variants.length === 0 && !formData.has_variants 
-                            ? [{ size_name: "", actual_price: "", offer_price: "", is_available: true }] : formData.variants
+                            ? [
+                                { size_name: "QTR", actual_price: "", offer_price: "", is_available: true },
+                                { size_name: "HALF", actual_price: "", offer_price: "", is_available: true },
+                                { size_name: "FULL", actual_price: "", offer_price: "", is_available: true }
+                              ] 
+                            : formData.variants
                         });
                       }
                     }}
@@ -179,7 +251,7 @@ const MenuFormModal = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div className="space-y-1.5 relative">
                     <label className={labelClass}>Menu Section</label>
-                    <select disabled={loading} className={`${inputClass} appearance-none`} required value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })}>
+                    <select disabled={loading} className={`${inputClass} appearance-none`} required value={formData.section || "OTHERS"} onChange={(e) => setFormData({ ...formData, section: e.target.value })}>
                       {sectionOptions.map((opt) => (
                         <option key={opt.value} value={opt.value} className="bg-brand-green-dark text-white">{opt.label}</option>
                       ))}
