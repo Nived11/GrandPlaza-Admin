@@ -35,11 +35,11 @@ export default function CustomerInvoiceModal({ order, isOpen, onClose }: Custome
   const itemsSubtotal = Math.max(0, totalAmount - deliveryFee);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh] print:max-w-none print:w-[80mm] print:h-auto print:border-none print:shadow-none print:rounded-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] sm:max-h-[90vh] print:max-w-none print:w-[80mm] print:h-auto print:border-none print:shadow-none print:rounded-none">
         
         {/* Modal Top Bar (Hidden on print) */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-emerald-950 text-white print:hidden">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-emerald-950 text-white print:hidden">
           <div className="flex items-center gap-2">
             <Receipt size={18} className="text-amber-400" />
             <span className="font-bold text-sm tracking-wide">Customer Tax Invoice / Bill</span>
@@ -53,7 +53,7 @@ export default function CustomerInvoiceModal({ order, isOpen, onClose }: Custome
         </div>
 
         {/* Printable Invoice Content */}
-        <div id="invoice-printable-area" className="p-6 bg-white overflow-y-auto text-black font-sans print:p-2 print:overflow-visible print:font-mono">
+        <div id="invoice-printable-area" className="p-4 sm:p-6 bg-white overflow-y-auto text-black font-sans print:p-2 print:overflow-visible print:font-mono">
           
           {/* Restaurant Header */}
           <div className="text-center border-b border-gray-200 pb-4 mb-4">

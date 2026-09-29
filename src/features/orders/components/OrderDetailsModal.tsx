@@ -67,27 +67,27 @@ export default function OrderDetailsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2.5 sm:p-4">
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] sm:max-h-[90vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-black">Order #{order.id}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${currentStatus.bg} ${currentStatus.text}`}>
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-900 text-white">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-lg sm:text-xl font-black">Order #{order.id}</span>
+            <span className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-bold ${currentStatus.bg} ${currentStatus.text}`}>
               {currentStatus.label}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-slate-800 text-gray-400 hover:text-white transition cursor-pointer"
+            className="p-1 sm:p-1.5 rounded-xl hover:bg-slate-800 text-gray-400 hover:text-white transition cursor-pointer"
           >
-            <X size={20} />
+            <X size={18} className="sm:w-5 sm:h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6">
           {/* Quick Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Customer Details */}
@@ -137,6 +137,51 @@ export default function OrderDetailsModal({
               </div>
             </div>
           </div>
+
+          {/* Delivery Partner Details / Waiting Status */}
+          {order.delivery_boy ? (
+            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black shrink-0">
+                  <Bike size={20} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-purple-700 block">
+                    Assigned Delivery Partner
+                  </span>
+                  <p className="text-sm font-bold text-slate-900">
+                    {order.delivery_boy.name}
+                    {order.delivery_boy.employee_id && (
+                      <span className="text-xs text-gray-500 font-normal ml-1">
+                        ({order.delivery_boy.employee_id})
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={`tel:${order.delivery_boy.phone}`}
+                className="px-3.5 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition shrink-0"
+              >
+                <Phone size={13} />
+                <span>{order.delivery_boy.phone}</span>
+              </a>
+            </div>
+          ) : order.status === 'ready_for_pickup' ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 font-black">
+                <Bike size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase text-amber-700 block">
+                  Delivery Status: Ready for Pickup
+                </span>
+                <p className="text-xs font-bold text-amber-950">
+                  Order is packed at the counter. Waiting for a delivery partner to accept and pick up via Driver App.
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           {/* Special Cooking Instructions */}
           {order.special_instructions && (
@@ -245,24 +290,24 @@ export default function OrderDetailsModal({
         </div>
 
         {/* Modal Bottom Actions */}
-        <div className="p-4 bg-gray-50 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3 sm:p-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           {/* Cancel Order */}
           {order.status !== 'cancelled' && order.status !== 'delivered' && (
             <button
               type="button"
               disabled={isUpdating}
               onClick={() => onUpdateStatus(order.id, 'cancelled')}
-              className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1.5 transition cursor-pointer"
+              className="text-xs font-bold text-rose-600 hover:text-rose-800 flex items-center justify-center sm:justify-start gap-1.5 transition cursor-pointer py-1.5"
             >
               <XCircle size={15} /> Cancel Order
             </button>
           )}
 
-          <div className="flex items-center gap-2.5 ml-auto">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-2.5 sm:ml-auto">
             <button
               type="button"
               onClick={() => onPrintKOT(order)}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+              className="py-2.5 sm:py-2 px-3 sm:px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
             >
               <Printer size={14} className="text-amber-400" />
               <span>Print KOT</span>
@@ -271,7 +316,7 @@ export default function OrderDetailsModal({
             <button
               type="button"
               onClick={() => onPrintBill(order)}
-              className="px-4 py-2 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+              className="py-2.5 sm:py-2 px-3 sm:px-4 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
             >
               <Receipt size={14} className="text-amber-400" />
               <span>Print Bill</span>

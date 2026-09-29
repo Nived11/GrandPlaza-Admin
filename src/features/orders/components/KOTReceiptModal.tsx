@@ -8,14 +8,25 @@ interface KOTReceiptModalProps {
   order: AdminOrder | null;
   isOpen: boolean;
   onClose: () => void;
+  autoTrigger?: boolean;
 }
 
-export default function KOTReceiptModal({ order, isOpen, onClose }: KOTReceiptModalProps) {
+export default function KOTReceiptModal({ order, isOpen, onClose, autoTrigger = false }: KOTReceiptModalProps) {
   if (!isOpen || !order) return null;
 
   const handlePrint = () => {
     window.print();
   };
+
+  // 🖨️ Auto-trigger window.print() for zero-touch kitchen printing
+  React.useEffect(() => {
+    if (isOpen && order && autoTrigger) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, order, autoTrigger]);
 
   const formattedTime = new Date(order.created_at).toLocaleTimeString('en-IN', {
     hour: '2-digit',
@@ -30,11 +41,11 @@ export default function KOTReceiptModal({ order, isOpen, onClose }: KOTReceiptMo
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh] print:max-w-none print:w-[80mm] print:h-auto print:border-none print:shadow-none print:rounded-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2.5 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] sm:max-h-[90vh] print:max-w-none print:w-[80mm] print:h-auto print:border-none print:shadow-none print:rounded-none">
         
         {/* Modal Top Bar (Hidden on print) */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white print:hidden">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 bg-slate-900 text-white print:hidden">
           <div className="flex items-center gap-2">
             <ChefHat size={18} className="text-amber-400" />
             <span className="font-bold text-sm tracking-wide">Kitchen Order Ticket (KOT)</span>
@@ -48,7 +59,7 @@ export default function KOTReceiptModal({ order, isOpen, onClose }: KOTReceiptMo
         </div>
 
         {/* Printable Ticket Content (80mm POS style) */}
-        <div id="kot-printable-area" className="p-6 bg-white overflow-y-auto font-mono text-black print:p-2 print:overflow-visible">
+        <div id="kot-printable-area" className="p-4 sm:p-6 bg-white overflow-y-auto font-mono text-black print:p-2 print:overflow-visible">
           
           {/* Header */}
           <div className="text-center border-b-2 border-dashed border-gray-400 pb-3 mb-3">

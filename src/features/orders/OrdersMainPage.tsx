@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChefHat, ShoppingBag, UtensilsCrossed, AlertCircle } from 'lucide-react';
+import { ChefHat, ShoppingBag, UtensilsCrossed, AlertCircle, Printer } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLiveOrders } from './hooks/useLiveOrders';
 import OrderTabs from './components/OrderTabs';
 import OrderCard from './components/OrderCard';
 import KOTReceiptModal from './components/KOTReceiptModal';
 import CustomerInvoiceModal from './components/CustomerInvoiceModal';
 import OrderDetailsModal from './components/OrderDetailsModal';
+import AutoPrintWarningModal from './components/AutoPrintWarningModal';
 import { AdminOrder } from './types/orderTypes';
 
 export default function OrdersMainPage() {
@@ -26,60 +28,93 @@ export default function OrdersMainPage() {
     setAutoRefresh,
     soundEnabled,
     toggleSound,
+    autoPrintEnabled,
+    setAutoPrint,
+    autoPrintOrder,
+    clearAutoPrintOrder,
     refreshOrders,
     updateStatus,
   } = useLiveOrders();
 
-  // Selected Order for Modals
+  // Selected Order for Manual Modals
   const [kotOrder, setKotOrder] = useState<AdminOrder | null>(null);
   const [billOrder, setBillOrder] = useState<AdminOrder | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<AdminOrder | null>(null);
 
+  // Warning Modal for Accidental OFF Protection
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+
+  const handleRequestToggleAutoPrint = () => {
+    if (autoPrintEnabled) {
+      // 🛡️ User wants to turn OFF -> show warning modal to prevent accidents!
+      setIsWarningModalOpen(true);
+    } else {
+      // Turn back ON directly
+      setAutoPrint(true);
+      toast.success('🖨️ Kitchen Auto-Print is now ENABLED! New tickets will print automatically.');
+    }
+  };
+
+  const handleConfirmDisableAutoPrint = () => {
+    setAutoPrint(false);
+    toast.warning('⚠️ Kitchen Auto-Print turned OFF. Incoming orders must be printed manually!');
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="min-h-screen bg-[#F8F9FA] p-3 sm:p-5 lg:p-8 space-y-4 sm:space-y-6">
       
       {/* Page Title & Live Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
               Live Orders & Kitchen POS
             </h1>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[11px] sm:text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Kitchen Live
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          <p className="text-[11px] sm:text-sm text-gray-500 mt-0.5">
             Auto-confirmed kitchen tickets, thermal KOT printing, and delivery boy dispatch counter
           </p>
         </div>
 
         {/* Quick Kitchen Metric Pills */}
-        <div className="flex items-center gap-3">
-          <div className="bg-white border border-gray-100 rounded-2xl px-4 py-2.5 shadow-xs flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-black">
-              <ChefHat size={18} />
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Auto-print badge indicator */}
+          <div className={`hidden lg:flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border text-xs font-bold ${
+            autoPrintEnabled
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50 border-amber-200 text-amber-800'
+          }`}>
+            <Printer size={15} />
+            <span>KOT Auto-Print: {autoPrintEnabled ? 'Active' : 'Paused'}</span>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-2xl p-3 sm:px-4 sm:py-2.5 shadow-xs flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-black shrink-0">
+              <ChefHat size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
                 In Kitchen
               </span>
-              <span className="text-base font-black text-slate-900">
+              <span className="text-sm sm:text-base font-black text-slate-900">
                 {stats.preparing} Active
               </span>
             </div>
           </div>
 
-          <div className="bg-white border border-gray-100 rounded-2xl px-4 py-2.5 shadow-xs flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">
-              <ShoppingBag size={18} />
+          <div className="bg-white border border-gray-100 rounded-2xl p-3 sm:px-4 sm:py-2.5 shadow-xs flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black shrink-0">
+              <ShoppingBag size={16} className="sm:w-[18px] sm:h-[18px]" />
             </div>
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
                 At Counter
               </span>
-              <span className="text-base font-black text-slate-900">
+              <span className="text-sm sm:text-base font-black text-slate-900">
                 {stats.ready_for_pickup} Ready
               </span>
             </div>
@@ -100,6 +135,8 @@ export default function OrdersMainPage() {
         setAutoRefresh={setAutoRefresh}
         soundEnabled={soundEnabled}
         onToggleSound={toggleSound}
+        autoPrintEnabled={autoPrintEnabled}
+        onRequestToggleAutoPrint={handleRequestToggleAutoPrint}
         onRefresh={refreshOrders}
         loading={loading}
       />
@@ -165,11 +202,19 @@ export default function OrdersMainPage() {
         </div>
       )}
 
-      {/* KOT Thermal Print Modal */}
+      {/* Manual KOT Thermal Print Modal */}
       <KOTReceiptModal
         order={kotOrder}
         isOpen={Boolean(kotOrder)}
         onClose={() => setKotOrder(null)}
+      />
+
+      {/* 🖨️ Automatic KOT Thermal Print Modal (Zero-Touch Print Trigger) */}
+      <KOTReceiptModal
+        order={autoPrintOrder}
+        isOpen={Boolean(autoPrintOrder)}
+        autoTrigger={true}
+        onClose={clearAutoPrintOrder}
       />
 
       {/* Customer Invoice Modal */}
@@ -188,6 +233,13 @@ export default function OrdersMainPage() {
         onPrintKOT={(o) => setKotOrder(o)}
         onPrintBill={(o) => setBillOrder(o)}
         isUpdating={isUpdating}
+      />
+
+      {/* ⚠️ Accidental Turn-Off Protection Warning Modal */}
+      <AutoPrintWarningModal
+        isOpen={isWarningModalOpen}
+        onClose={() => setIsWarningModalOpen(false)}
+        onConfirmDisable={handleConfirmDisableAutoPrint}
       />
     </div>
   );

@@ -19,6 +19,14 @@ export interface AdminOrderItem {
   line_total: string;
 }
 
+export interface DeliveryBoyInfo {
+  id: number;
+  name: string;
+  phone: string;
+  employee_id?: string | null;
+  status: string;
+}
+
 export interface AdminOrder {
   id: number;
   customer_name: string;
@@ -32,6 +40,7 @@ export interface AdminOrder {
   created_at: string;
   updated_at: string;
   payment_method?: string;
+  delivery_boy?: DeliveryBoyInfo | null;
 }
 
 export interface OrderFilterParams {

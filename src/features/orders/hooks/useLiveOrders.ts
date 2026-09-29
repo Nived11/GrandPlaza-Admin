@@ -9,7 +9,9 @@ import { AdminOrder, OrderStatus, PaymentStatus } from '../types/orderTypes';
 // 🔔 Clean Web Audio API Chime for New Order Notification
 const playNewOrderChime = () => {
   try {
-    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
 
     const ctx = new AudioContextClass();
@@ -50,20 +52,34 @@ export function useLiveOrders() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // 🖨️ Auto-Print KOT State (Defaults to TRUE as requested)
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(true);
+  const [autoPrintOrder, setAutoPrintOrder] = useState<AdminOrder | null>(null);
+
   // Filter States
   const [activeTab, setActiveTab] = useState<'all' | OrderStatus>('preparing');
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   const knownOrderIdsRef = useRef<Set<number>>(new Set());
+  const printedOrderIdsRef = useRef<Set<number>>(new Set());
   const isFirstLoadRef = useRef(true);
 
-  // Initialize sound settings
+  // Initialize sound and auto-print settings from localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedSound = localStorage.getItem('grandplaza_order_sound');
       if (savedSound !== null) {
         setSoundEnabled(savedSound === 'true');
+      }
+
+      const savedAutoPrint = localStorage.getItem('grandplaza_auto_print_kot');
+      if (savedAutoPrint !== null) {
+        setAutoPrintEnabled(savedAutoPrint === 'true');
+      } else {
+        // Default is TRUE
+        setAutoPrintEnabled(true);
+        localStorage.setItem('grandplaza_auto_print_kot', 'true');
       }
     }
   }, []);
@@ -78,56 +94,92 @@ export function useLiveOrders() {
     });
   };
 
-  // Fetch Orders
-  const fetchOrders = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-
-    try {
-      const response = await getStaffOrdersApi({
-        search: searchQuery,
-        payment_status: paymentFilter !== 'all' ? paymentFilter : undefined,
-      });
-
-      let orderList: AdminOrder[] = [];
-      if (Array.isArray(response)) {
-        orderList = response;
-      } else if (response && Array.isArray(response.results)) {
-        orderList = response.results;
-      } else if (response && Array.isArray(response.data)) {
-        orderList = response.data;
-      }
-
-      // Check for incoming new orders to ring chime
-      if (!isFirstLoadRef.current && soundEnabled) {
-        const hasNewOrder = orderList.some(
-          (o) =>
-            !knownOrderIdsRef.current.has(o.id) &&
-            (o.status === 'pending' || o.status === 'preparing')
-        );
-
-        if (hasNewOrder) {
-          playNewOrderChime();
-          toast.info('🔔 New Order received in Kitchen!', {
-            duration: 4000,
-          });
-        }
-      }
-
-      // Update known IDs
-      orderList.forEach((o) => knownOrderIdsRef.current.add(o.id));
-      isFirstLoadRef.current = false;
-
-      setOrders(orderList);
-    } catch (err: unknown) {
-      console.error('Error fetching staff orders:', err);
-      if (!isSilent) {
-        const msg = extractErrorMessages(err);
-        toast.error(msg);
-      }
-    } finally {
-      if (!isSilent) setLoading(false);
+  const setAutoPrint = (enable: boolean) => {
+    setAutoPrintEnabled(enable);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('grandplaza_auto_print_kot', String(enable));
     }
-  }, [searchQuery, paymentFilter, soundEnabled]);
+  };
+
+  // Fetch Orders
+  const fetchOrders = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setLoading(true);
+
+      try {
+        const response = await getStaffOrdersApi({
+          search: searchQuery,
+          payment_status: paymentFilter !== 'all' ? paymentFilter : undefined,
+        });
+
+        let orderList: AdminOrder[] = [];
+        if (Array.isArray(response)) {
+          orderList = response;
+        } else if (response && Array.isArray(response.results)) {
+          orderList = response.results;
+        } else if (response && Array.isArray(response.data)) {
+          orderList = response.data;
+        }
+
+        // On first load, mark all existing orders as already known and printed
+        // so we don't spam print 100 historical orders on page load!
+        if (isFirstLoadRef.current) {
+          orderList.forEach((o) => {
+            knownOrderIdsRef.current.add(o.id);
+            printedOrderIdsRef.current.add(o.id);
+          });
+          isFirstLoadRef.current = false;
+        } else {
+          // Detect truly NEW incoming kitchen orders
+          const newKitchenOrders = orderList.filter(
+            (o) =>
+              !knownOrderIdsRef.current.has(o.id) &&
+              (o.status === 'pending' || o.status === 'preparing')
+          );
+
+          if (newKitchenOrders.length > 0) {
+            // Play sound chime if enabled
+            if (soundEnabled) {
+              playNewOrderChime();
+            }
+
+            toast.info(`🔔 New Kitchen Order #${newKitchenOrders[0].id} received!`, {
+              duration: 4000,
+            });
+
+            // 🖨️ Auto-Print KOT for newly arrived order if autoPrintEnabled is active
+            if (autoPrintEnabled) {
+              const orderToPrint = newKitchenOrders.find(
+                (o) => !printedOrderIdsRef.current.has(o.id)
+              );
+
+              if (orderToPrint) {
+                printedOrderIdsRef.current.add(orderToPrint.id);
+                setAutoPrintOrder(orderToPrint);
+                toast.success(`🖨️ Auto-Printing KOT for Order #${orderToPrint.id}...`, {
+                  duration: 3000,
+                });
+              }
+            }
+          }
+
+          // Update known IDs
+          orderList.forEach((o) => knownOrderIdsRef.current.add(o.id));
+        }
+
+        setOrders(orderList);
+      } catch (err: unknown) {
+        console.error('Error fetching staff orders:', err);
+        if (!isSilent) {
+          const msg = extractErrorMessages(err);
+          toast.error(msg);
+        }
+      } finally {
+        if (!isSilent) setLoading(false);
+      }
+    },
+    [searchQuery, paymentFilter, soundEnabled, autoPrintEnabled]
+  );
 
   // Initial fetch
   useEffect(() => {
@@ -148,7 +200,6 @@ export function useLiveOrders() {
   // Status metrics calculation
   const stats = {
     total: orders.length,
-    // Group pending and preparing together for kitchen
     preparing: orders.filter((o) => o.status === 'preparing' || o.status === 'pending').length,
     ready_for_pickup: orders.filter((o) => o.status === 'ready_for_pickup').length,
     out_for_delivery: orders.filter((o) => o.status === 'out_for_delivery').length,
@@ -166,7 +217,11 @@ export function useLiveOrders() {
   });
 
   // Update order status with optimistic update
-  const updateStatus = async (orderId: number, nextStatus: OrderStatus, paymentStatus?: PaymentStatus) => {
+  const updateStatus = async (
+    orderId: number,
+    nextStatus: OrderStatus,
+    paymentStatus?: PaymentStatus
+  ) => {
     setIsUpdating(true);
     try {
       await updateOrderStatusApi(orderId, nextStatus, paymentStatus);
@@ -222,6 +277,10 @@ export function useLiveOrders() {
     setAutoRefresh,
     soundEnabled,
     toggleSound,
+    autoPrintEnabled,
+    setAutoPrint,
+    autoPrintOrder,
+    clearAutoPrintOrder: () => setAutoPrintOrder(null),
     refreshOrders: () => fetchOrders(false),
     updateStatus,
   };
