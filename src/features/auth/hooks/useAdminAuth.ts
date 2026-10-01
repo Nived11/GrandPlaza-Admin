@@ -22,7 +22,7 @@ export const useAdminAuth = () => {
 
       // Save verified backend role & username for client-side routing & UI
       if (typeof window !== "undefined") {
-        document.cookie = `user_role=${role}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `user_role=${role}; path=/; max-age=2592000; SameSite=Lax`;
         localStorage.setItem("username", username);
       }
 
