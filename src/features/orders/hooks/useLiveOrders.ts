@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { extractErrorMessages } from '@/utils/extractErrorMessages';
 import { getStaffOrdersApi, updateOrderStatusApi } from '../api/orderApi';
 import { AdminOrder, OrderStatus, PaymentStatus } from '../types/orderTypes';
+import { getPusherClient } from '@/lib/pusherClient';
 
 // 🔔 Clean Web Audio API Chime for New Order Notification
 const playNewOrderChime = () => {
@@ -186,13 +187,75 @@ export function useLiveOrders() {
     fetchOrders(false);
   }, [fetchOrders]);
 
-  // Polling every 12 seconds for real-time live order updates
+  // ⚡ Instant Realtime Updates via Pusher Channels
+  useEffect(() => {
+    const pusher = getPusherClient();
+    if (!pusher) return;
+
+    const channel = pusher.subscribe('orders-channel');
+
+    // 1. Handle New Incoming Order
+    const handleNewOrder = (newOrder: AdminOrder) => {
+      if (!newOrder || !newOrder.id) return;
+
+      // Check if we already received or processed this order
+      if (knownOrderIdsRef.current.has(newOrder.id)) return;
+      knownOrderIdsRef.current.add(newOrder.id);
+
+      // Add to orders state immediately
+      setOrders((prev) => {
+        const exists = prev.some((o) => o.id === newOrder.id);
+        if (exists) return prev;
+        return [newOrder, ...prev];
+      });
+
+      // Play Sound Chime
+      if (soundEnabled) {
+        playNewOrderChime();
+      }
+
+      toast.info(`🔔 New Kitchen Order #${newOrder.id} received!`, {
+        duration: 4000,
+      });
+
+      // Auto-Print KOT
+      if (autoPrintEnabled && !printedOrderIdsRef.current.has(newOrder.id)) {
+        printedOrderIdsRef.current.add(newOrder.id);
+        setAutoPrintOrder(newOrder);
+        toast.success(`🖨️ Auto-Printing KOT for Order #${newOrder.id}...`, {
+          duration: 3000,
+        });
+      }
+    };
+
+    // 2. Handle Order Status Update (e.g., from Delivery boy or Staff)
+    const handleStatusUpdate = (updatedOrder: AdminOrder) => {
+      if (!updatedOrder || !updatedOrder.id) return;
+
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order
+        )
+      );
+    };
+
+    channel.bind('new-order', handleNewOrder);
+    channel.bind('order-status-updated', handleStatusUpdate);
+
+    return () => {
+      channel.unbind('new-order', handleNewOrder);
+      channel.unbind('order-status-updated', handleStatusUpdate);
+      pusher.unsubscribe('orders-channel');
+    };
+  }, [soundEnabled, autoPrintEnabled]);
+
+  // Polling fallback (every 25 seconds) as safety net backup
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       fetchOrders(true);
-    }, 12000);
+    }, 25000);
 
     return () => clearInterval(interval);
   }, [autoRefresh, fetchOrders]);

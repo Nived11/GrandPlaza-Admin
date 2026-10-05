@@ -37,7 +37,9 @@ const buildFormData = (data: Partial<MenuItemPayload>) => {
   
   if (data.is_available !== undefined) formData.append("is_available", String(data.is_available));
 
-  if (data.variants) {
+  if (!data.has_variants) {
+    formData.append("variants", "[]");
+  } else if (data.variants) {
     formData.append("variants", JSON.stringify(data.variants));
   }
 
@@ -70,6 +72,9 @@ export const updateMenuItemApi = async (id: number | string, data: Partial<MenuI
     delete payload.previewUrl;
     if (typeof payload.image === "string") {
       delete payload.image;
+    }
+    if (!payload.has_variants) {
+      payload.variants = [];
     }
     const response = await axiosInstance.patch(`/menu/admin/menu-items/${id}`, payload);
     return response.data;

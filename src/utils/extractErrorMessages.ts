@@ -31,6 +31,16 @@ export const extractErrorMessages = (err: any): string => {
         if (typeof firstValue === "string") {
           return `${firstKey}: ${firstValue}`;
         }
+        // 🌟 Handle nested array errors like variants: [{ actual_price: [...] }]
+        if (Array.isArray(firstValue) && typeof firstValue[0] === "object") {
+          const nestedObj = firstValue.find((v: any) => v && typeof v === "object" && Object.keys(v).length > 0) || firstValue[0];
+          if (nestedObj) {
+            const subKey = Object.keys(nestedObj)[0];
+            const subVal = nestedObj[subKey];
+            const msg = Array.isArray(subVal) ? subVal[0] : subVal;
+            return `${firstKey} (${subKey}): ${msg}`;
+          }
+        }
       }
     }
 
@@ -38,6 +48,10 @@ export const extractErrorMessages = (err: any): string => {
     if (Array.isArray(data) && typeof data[0] === "string") {
       return data[0];
     }
+
+    // 🌟 Fallback if response exists so it never falls through to network error
+    if (typeof data === "string") return data;
+    return "Validation error. Please verify the entered data.";
   } 
 
   // 🔴 2. Server-ലേക്ക് Request പോയി, പക്ഷെ Response ഒന്നും വരാതിരുന്നാൽ മാത്രം (True Network Error)

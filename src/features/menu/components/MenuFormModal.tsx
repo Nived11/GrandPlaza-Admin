@@ -224,14 +224,16 @@ const MenuFormModal = ({
                         const existingActual = formData.actual_price || "";
                         const existingOffer = formData.offer_price || "";
 
-                        // 🌟 മുന്നേ ഉള്ള Price നഷ്ടപ്പെടാതെ ആദ്യ വേരിയന്റിലേക്ക് കൊടുക്കുന്നു
-                        const updatedVariants = (Array.isArray(formData.variants) && formData.variants.length > 0)
-                          ? formData.variants
-                          : [
-                              { size_name: "Qtr", actual_price: existingActual, offer_price: existingOffer, is_available: true },
-                              { size_name: "Half", actual_price: "", offer_price: "", is_available: true },
-                              { size_name: "Full", actual_price: "", offer_price: "", is_available: true }
-                            ];
+                        // 🌟 Variants Mode ON ആക്കുമ്പോൾ മാത്രം ടെംപ്ലേറ്റ് നൽകുക, OFF ആക്കുമ്പോൾ variants ശൂന്യമാക്കുക
+                        const updatedVariants = willHaveVariants
+                          ? (Array.isArray(formData.variants) && formData.variants.length > 0
+                              ? formData.variants
+                              : [
+                                  { size_name: "Qtr", actual_price: existingActual, offer_price: existingOffer, is_available: true },
+                                  { size_name: "Half", actual_price: "", offer_price: "", is_available: true },
+                                  { size_name: "Full", actual_price: "", offer_price: "", is_available: true }
+                                ])
+                          : [];
 
                         setFormData({
                           ...formData,
