@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Bike, 
   UserPlus, 
@@ -10,9 +10,11 @@ import {
   Truck, 
   MoreVertical, 
   Edit2, 
-  Trash2 
+  Trash2,
+  MapPin
 } from "lucide-react";
 import EmployeeSkeleton from "./EmployeeSkeleton";
+import LiveFleetMapModal from "./LiveFleetMapModal";
 
 interface Props {
   deliveryList: any[];
@@ -39,6 +41,8 @@ export default function DeliverySection({
   setOpenMenuId,
   menuRef,
 }: Props) {
+  const [isFleetMapOpen, setIsFleetMapOpen] = useState(false);
+  const [selectedRiderForMap, setSelectedRiderForMap] = useState<number | null>(null);
   const filteredDelivery = deliveryList.filter((d) => 
     (d.username || "").toLowerCase().includes(deliverySearch.toLowerCase()) || 
     (d.first_name || "").toLowerCase().includes(deliverySearch.toLowerCase()) ||
@@ -62,13 +66,27 @@ export default function DeliverySection({
           </div>
         </div>
 
-        <button 
-          onClick={onAddClick}
-          className="bg-[var(--brand-green-dark)] hover:bg-[var(--brand-green-light)] text-brand-cream border border-brand-gold px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2 transition shadow-md cursor-pointer shrink-0"
-        >
-          <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="whitespace-nowrap">Add Rider</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            type="button"
+            onClick={() => {
+              setSelectedRiderForMap(null);
+              setIsFleetMapOpen(true);
+            }}
+            className="bg-emerald-50 hover:bg-emerald-100 text-[var(--brand-green-dark)] border border-emerald-300 px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-lg sm:rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition shadow-xs cursor-pointer shrink-0"
+          >
+            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+            <span className="whitespace-nowrap">Live Fleet Map</span>
+          </button>
+
+          <button 
+            onClick={onAddClick}
+            className="bg-[var(--brand-green-dark)] hover:bg-[var(--brand-green-light)] text-brand-cream border border-brand-gold px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-lg sm:rounded-xl font-bold uppercase tracking-wider text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2 transition shadow-md cursor-pointer shrink-0"
+          >
+            <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="whitespace-nowrap">Add Rider</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -138,6 +156,19 @@ export default function DeliverySection({
                 </div>
 
                 <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRiderForMap(rider.id);
+                      setIsFleetMapOpen(true);
+                    }}
+                    title="Track Live GPS Location"
+                    className="px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <MapPin size={11} className="text-emerald-600" />
+                    <span>Track</span>
+                  </button>
+
                   <span className="text-[8px] sm:text-[10px] font-bold uppercase px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full flex items-center gap-0.5 sm:gap-1 bg-sky-100 text-sky-800 border border-sky-300 whitespace-nowrap">
                     Active
                   </span>
@@ -171,6 +202,14 @@ export default function DeliverySection({
           })}
         </div>
       )}
+
+      {/* Live Fleet Map Modal */}
+      <LiveFleetMapModal
+        isOpen={isFleetMapOpen}
+        onClose={() => setIsFleetMapOpen(false)}
+        riders={deliveryList}
+        initialSelectedRiderId={selectedRiderForMap}
+      />
     </section>
   );
 }
