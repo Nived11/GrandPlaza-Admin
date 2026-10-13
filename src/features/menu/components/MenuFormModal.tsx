@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, X, Loader2, Eye, EyeOff, Plus, Trash2, UploadCloud, Edit2 } from "lucide-react";
+import { ChevronDown, X, Loader2, Eye, EyeOff, Plus, Trash2, UploadCloud, Edit2, Package } from "lucide-react";
 
 const MenuFormModal = ({
   formData, setFormData, onClose, onSubmit, editingId,
@@ -358,6 +358,35 @@ const MenuFormModal = ({
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* 📦 Packing Charge */}
+                <div className="space-y-1.5 bg-black/10 p-3.5 rounded-xl border border-brand-gold/20">
+                  <div className="flex justify-between items-center">
+                    <label className={`${labelClass} !mb-0 flex items-center gap-1.5`}>
+                      <Package size={12} className="text-brand-gold" />
+                      Packing Charge (₹)
+                    </label>
+                    <span className="text-[8px] font-bold text-brand-gold/70">
+                      Default: ₹0 (Free)
+                    </span>
+                  </div>
+                  <input
+                    disabled={loading}
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    onWheel={stopScrollChange}
+                    placeholder="0"
+                    className={inputClass}
+                    value={formData.packing_charge ?? ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, packing_charge: e.target.value })
+                    }
+                  />
+                  <p className="text-[8px] text-brand-cream/60 ml-1">
+                    Enter packaging fee per item for takeaway/delivery (e.g. ₹10). Leave 0 if free.
+                  </p>
                 </div>
 
               </div>

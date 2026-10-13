@@ -21,6 +21,7 @@ const initialFormState = {
   has_variants: false,
   actual_price: "",
   offer_price: "",
+  packing_charge: "0",
   is_available: true,
   variants: [],
   image: null,
@@ -78,6 +79,7 @@ const ProductSection = () => {
     if (categoryList.length === 0) fetchCategories();
     setFormData({
       ...item,
+      packing_charge: item.packing_charge !== undefined && item.packing_charge !== null ? item.packing_charge : "0",
       previewUrl: item.image || null,
     });
     setEditingId(item.id);

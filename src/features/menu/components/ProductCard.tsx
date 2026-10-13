@@ -43,6 +43,11 @@ const ProductCard = ({ item, onEdit, onDelete }: any) => {
               <Layers size={10} /> Variants
             </span>
           )}
+          {item?.packing_charge && Number(item?.packing_charge) > 0 ? (
+            <span className="bg-amber-50 text-amber-900 text-[9px] font-black px-2 py-1 rounded shadow-sm uppercase tracking-widest border border-amber-300/80">
+              📦 ₹{item.packing_charge}
+            </span>
+          ) : null}
         </div>
       </div>
 

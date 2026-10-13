@@ -16,6 +16,7 @@ export interface MenuItemPayload {
   has_variants: boolean;
   actual_price?: string | null;
   offer_price?: string | null;
+  packing_charge?: string | number | null;
   is_available: boolean;
   variants?: VariantPayload[];
   image?: File | null | string;
@@ -34,6 +35,7 @@ const buildFormData = (data: Partial<MenuItemPayload>) => {
   
   if (data.actual_price !== undefined && data.actual_price !== null) formData.append("actual_price", data.actual_price.toString());
   if (data.offer_price !== undefined && data.offer_price !== null) formData.append("offer_price", data.offer_price.toString());
+  if (data.packing_charge !== undefined && data.packing_charge !== null) formData.append("packing_charge", data.packing_charge.toString());
   
   if (data.is_available !== undefined) formData.append("is_available", String(data.is_available));
 
