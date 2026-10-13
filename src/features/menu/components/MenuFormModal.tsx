@@ -350,49 +350,49 @@ const MenuFormModal = ({
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-1.5">
-                        <label className={labelClass}>MRP (₹)</label>
-                        <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} required={!formData.has_variants} placeholder="0" className={inputClass} value={formData.actual_price} onChange={(e) => setFormData({ ...formData, actual_price: e.target.value })} />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-1.5">
+                          <label className={labelClass}>MRP (₹)</label>
+                          <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} required={!formData.has_variants} placeholder="0" className={inputClass} value={formData.actual_price} onChange={(e) => setFormData({ ...formData, actual_price: e.target.value })} />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className={labelClass}>Offer Price (₹)</label>
+                          <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} ${isPriceInvalid ? "border-red-400 bg-red-900/20" : ""}`} value={formData.offer_price} onChange={(e) => setFormData({ ...formData, offer_price: e.target.value })} />
+                          {isPriceInvalid && <p className="text-[8px] text-red-400 font-black uppercase ml-1 mt-1">Must be less than MRP</p>}
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className={labelClass}>Offer Price (₹)</label>
-                        <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} ${isPriceInvalid ? "border-red-400 bg-red-900/20" : ""}`} value={formData.offer_price} onChange={(e) => setFormData({ ...formData, offer_price: e.target.value })} />
-                        {isPriceInvalid && <p className="text-[8px] text-red-400 font-black uppercase ml-1 mt-1">Must be less than MRP</p>}
+
+                      {/* 📦 Packing Charge (For items without variants) */}
+                      <div className="space-y-1.5 bg-black/10 p-3.5 rounded-xl border border-brand-gold/20">
+                        <div className="flex justify-between items-center">
+                          <label className={`${labelClass} !mb-0 flex items-center gap-1.5`}>
+                            <Package size={12} className="text-brand-gold" />
+                            Packing Charge (₹)
+                          </label>
+                          <span className="text-[8px] font-bold text-brand-gold/70">
+                            Default: ₹0 (Free)
+                          </span>
+                        </div>
+                        <input
+                          disabled={loading}
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          onWheel={stopScrollChange}
+                          placeholder="0"
+                          className={inputClass}
+                          value={formData.packing_charge ?? ""}
+                          onChange={(e) =>
+                            setFormData({ ...formData, packing_charge: e.target.value })
+                          }
+                        />
+                        <p className="text-[8px] text-brand-cream/60 ml-1">
+                          Enter packaging fee per item for takeaway/delivery (e.g. ₹10). Leave 0 if free.
+                        </p>
                       </div>
                     </div>
                   )}
-                </div>
-
-                {/* 📦 Packing Charge */}
-                <div className="space-y-1.5 bg-black/10 p-3.5 rounded-xl border border-brand-gold/20">
-                  <div className="flex justify-between items-center">
-                    <label className={`${labelClass} !mb-0 flex items-center gap-1.5`}>
-                      <Package size={12} className="text-brand-gold" />
-                      Packing Charge (₹)
-                    </label>
-                    <span className="text-[8px] font-bold text-brand-gold/70">
-                      Default: ₹0 (Free)
-                    </span>
-                  </div>
-                  <input
-                    disabled={loading}
-                    type="number"
-                    min="0"
-                    step="0.5"
-                    onWheel={stopScrollChange}
-                    placeholder="0"
-                    className={inputClass}
-                    value={formData.packing_charge ?? ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, packing_charge: e.target.value })
-                    }
-                  />
-                  <p className="text-[8px] text-brand-cream/60 ml-1">
-                    {formData.has_variants
-                      ? "Optional base fallback fee. If variant-level packing charges are set above, they take precedence."
-                      : "Enter packaging fee per item for takeaway/delivery (e.g. ₹10). Leave 0 if free."}
-                  </p>
                 </div>
 
               </div>
