@@ -62,7 +62,7 @@ const MenuFormModal = ({
       ...formData, 
       variants: [
         ...currentVariants, 
-        { size_name: "", actual_price: "", offer_price: "", is_available: true }
+        { size_name: "", actual_price: "", offer_price: "", packing_charge: "", is_available: true }
       ] 
     });
   };
@@ -324,7 +324,7 @@ const MenuFormModal = ({
                                 <Trash2 size={12} />
                               </button>
                             )}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                               <div className="space-y-1.5">
                                 <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Size/Name</label>
                                 <input disabled={loading} required placeholder="e.g. FULL" className={`${inputClass} !py-2`} value={variant.size_name} onChange={(e) => handleVariantChange(index, "size_name", e.target.value)} />
@@ -336,6 +336,10 @@ const MenuFormModal = ({
                               <div className="space-y-1.5">
                                 <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Offer Price (₹)</label>
                                 <input disabled={loading} type="number" min="0" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} !py-2 ${isVariantPriceInvalid ? "border-red-400 bg-red-900/20" : ""}`} value={variant.offer_price || ""} onChange={(e) => handleVariantChange(index, "offer_price", e.target.value)} />
+                              </div>
+                              <div className="space-y-1.5">
+                                <label className="text-[8px] font-bold text-brand-gold uppercase tracking-widest">Packing (₹)</label>
+                                <input disabled={loading} type="number" min="0" step="0.5" onWheel={stopScrollChange} placeholder="0" className={`${inputClass} !py-2`} value={variant.packing_charge ?? ""} onChange={(e) => handleVariantChange(index, "packing_charge", e.target.value)} />
                               </div>
                             </div>
                           </div>
@@ -385,7 +389,9 @@ const MenuFormModal = ({
                     }
                   />
                   <p className="text-[8px] text-brand-cream/60 ml-1">
-                    Enter packaging fee per item for takeaway/delivery (e.g. ₹10). Leave 0 if free.
+                    {formData.has_variants
+                      ? "Optional base fallback fee. If variant-level packing charges are set above, they take precedence."
+                      : "Enter packaging fee per item for takeaway/delivery (e.g. ₹10). Leave 0 if free."}
                   </p>
                 </div>
 

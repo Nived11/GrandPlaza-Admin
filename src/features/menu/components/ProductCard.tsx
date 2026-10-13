@@ -43,7 +43,29 @@ const ProductCard = ({ item, onEdit, onDelete }: any) => {
               <Layers size={10} /> Variants
             </span>
           )}
-          {item?.packing_charge && Number(item?.packing_charge) > 0 ? (
+          {hasVariants ? (
+            (() => {
+              const variantCharges = item.variants
+                ?.map((v: any) => Number(v.packing_charge) || 0)
+                .filter((c: number) => c > 0) || [];
+              if (variantCharges.length > 0) {
+                const minPkg = Math.min(...variantCharges);
+                const maxPkg = Math.max(...variantCharges);
+                return (
+                  <span className="bg-amber-50 text-amber-900 text-[9px] font-black px-2 py-1 rounded shadow-sm uppercase tracking-widest border border-amber-300/80">
+                    📦 {minPkg === maxPkg ? `₹${minPkg}` : `₹${minPkg} - ₹${maxPkg}`}
+                  </span>
+                );
+              } else if (item?.packing_charge && Number(item?.packing_charge) > 0) {
+                return (
+                  <span className="bg-amber-50 text-amber-900 text-[9px] font-black px-2 py-1 rounded shadow-sm uppercase tracking-widest border border-amber-300/80">
+                    📦 ₹{item.packing_charge}
+                  </span>
+                );
+              }
+              return null;
+            })()
+          ) : item?.packing_charge && Number(item?.packing_charge) > 0 ? (
             <span className="bg-amber-50 text-amber-900 text-[9px] font-black px-2 py-1 rounded shadow-sm uppercase tracking-widest border border-amber-300/80">
               📦 ₹{item.packing_charge}
             </span>
