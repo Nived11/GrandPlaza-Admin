@@ -56,7 +56,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
   ];
 
   const filteredNavLinks = navLinks.filter((link) => 
-    !role || link.roles.includes(role)
+    role === "admin" ? true : link.roles.includes("employee")
   );
 
   const isFull = isExpanded || isMobileOpen;
