@@ -73,7 +73,7 @@ export default function DashboardHeader({
             <Calendar size={13} className="text-gray-400" />
             <span>{todayFormatted}</span>
             <span>•</span>
-            <span>Real-time Swiggy & POS performance metrics</span>
+            <span>Real-time Restaurant Analytics & Live POS metrics</span>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ export default function DashboardHeader({
         </div>
       </div>
 
-      {/* Period Filter Tabs (Swiggy / Partner Style) */}
+      {/* Period Filter Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2.5 sm:p-3 rounded-2xl border border-gray-100 shadow-xs">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
           <span className="text-[11px] font-black uppercase text-gray-400 px-2 hidden md:inline">

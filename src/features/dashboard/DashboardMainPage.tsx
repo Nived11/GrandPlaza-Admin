@@ -7,8 +7,11 @@ import DashboardStatsCards from './components/DashboardStatsCards';
 import RevenueChart from './components/RevenueChart';
 import LivePipelineCard from './components/LivePipelineCard';
 import TopSellingDishes from './components/TopSellingDishes';
+import CategoryDistributionCard from './components/CategoryDistributionCard';
+import OperationsHealthCard from './components/OperationsHealthCard';
 import PaymentBreakdownCard from './components/PaymentBreakdownCard';
 import RecentOrdersWidget from './components/RecentOrdersWidget';
+import DashboardQuickActions from './components/DashboardQuickActions';
 
 export default function DashboardMainPage() {
   const {
@@ -44,7 +47,10 @@ export default function DashboardMainPage() {
         comparisonLabel={data?.comparison_label || ''}
       />
 
-      {/* 3. Middle Section: Sales Trend Chart & Live Kitchen Pipeline */}
+      {/* 3. Quick Restaurant Shortcuts Bar */}
+      <DashboardQuickActions />
+
+      {/* 4. Middle Section: Sales Trend Chart & Live Kitchen Pipeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         
         {/* Interactive Visual Trend Chart (2 columns on desktop) */}
@@ -65,22 +71,39 @@ export default function DashboardMainPage() {
         </div>
       </div>
 
-      {/* 4. Lower Section: Top Selling Dishes & Payment Breakdown */}
+      {/* 5. Food Analytics: Top Selling Dishes & Category Sales Share */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Bestseller Food Items */}
+        {/* Top Selling Food Items (Period vs All-Time Switcher) */}
         <TopSellingDishes
           items={data?.top_selling_items || []}
+          allTimeItems={data?.all_time_top_selling || []}
           periodLabel={data?.period_label || 'Today'}
         />
 
-        {/* Payment Methods (Online vs COD) */}
+        {/* Category Sales Share */}
+        <CategoryDistributionCard
+          categories={data?.category_distribution || []}
+          periodLabel={data?.period_label || 'Today'}
+        />
+      </div>
+
+      {/* 6. Operations & Finance: Kitchen Rush Hours & Payment Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Kitchen Rush Hours & Fulfillment Health */}
+        <OperationsHealthCard
+          metrics={data?.operations_metrics}
+          livePipeline={data?.live_pipeline}
+          periodLabel={data?.period_label || 'Today'}
+        />
+
+        {/* Payment Methods (Online UPI vs COD) */}
         <PaymentBreakdownCard
           payment={data?.payment_breakdown}
           periodLabel={data?.period_label || 'Today'}
         />
       </div>
 
-      {/* 5. Real-Time Recent Orders Feed */}
+      {/* 7. Real-Time Recent Orders Feed */}
       <RecentOrdersWidget orders={data?.recent_orders || []} />
 
     </div>

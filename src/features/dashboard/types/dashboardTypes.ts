@@ -48,6 +48,20 @@ export interface TopSellingItem {
   revenue: number;
 }
 
+export interface CategoryDistributionItem {
+  name: string;
+  quantity: number;
+  revenue: number;
+  percentage: number;
+}
+
+export interface OperationsMetrics {
+  busiest_slot: string;
+  fulfillment_rate: number;
+  cancellation_rate: number;
+  total_items_sold: number;
+}
+
 export interface RecentOrder {
   id: number;
   customer_name: string;
@@ -69,5 +83,8 @@ export interface DashboardData {
   payment_breakdown: PaymentBreakdown;
   timeline: TimelinePoint[];
   top_selling_items: TopSellingItem[];
+  all_time_top_selling?: TopSellingItem[];
+  category_distribution?: CategoryDistributionItem[];
+  operations_metrics?: OperationsMetrics;
   recent_orders: RecentOrder[];
 }

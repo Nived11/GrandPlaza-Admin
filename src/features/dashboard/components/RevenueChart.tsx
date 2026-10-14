@@ -84,8 +84,8 @@ export default function RevenueChart({ timeline, periodLabel }: RevenueChartProp
             <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
               Sales Trend & Order Volume
             </h3>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-50 text-orange-700 border border-orange-200">
-              Swiggy Style
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Live Insights
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">
