@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getCustomersApi, toggleBlockCustomerApi } from "../api/customerApi";
+import {
+  getCustomersApi,
+  toggleBlockCustomerApi,
+  getCustomerOrdersApi,
+} from "../api/customerApi";
 import { toast } from "sonner";
 import { extractErrorMessages } from "@/utils/extractErrorMessages";
 
@@ -15,7 +19,32 @@ export interface Customer {
   phone_number: string;
   role: string;
   address: string | null;
-  is_active: boolean; // 👈 Status
+  is_active: boolean;
+  total_orders: number;
+  total_spent: number;
+  last_order_date: string | null;
+  customer_badge?: "VIP" | "REGULAR" | "NEW" | "INACTIVE";
+}
+
+export interface CustomerOrderItem {
+  id: number;
+  item_name: string;
+  variant_name?: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+}
+
+export interface CustomerOrder {
+  id: number;
+  total_price: number;
+  status: string;
+  payment_status: string;
+  delivery_address: string;
+  special_instructions?: string;
+  created_at: string;
+  items_count: number;
+  items: CustomerOrderItem[];
 }
 
 export function useCustomer(searchQuery = "") {
@@ -27,12 +56,22 @@ export function useCustomer(searchQuery = "") {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
+  // 🎯 Filter & Sort States
+  const [filterType, setFilterType] = useState<string>("all"); // 'all' | 'top' | 'active' | 'blocked'
+  const [sortBy, setSortBy] = useState<string>("most_orders"); // 'most_orders' | 'highest_spent' | 'newest' | 'name'
+
+  // 📦 Customer Orders Modal States
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getCustomersApi(page, searchQuery);
+      const data = await getCustomersApi(page, searchQuery, filterType, sortBy);
 
       if (data && data.results) {
         setCustomerList(data.results);
@@ -56,7 +95,7 @@ export function useCustomer(searchQuery = "") {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery]);
+  }, [page, searchQuery, filterType, sortBy]);
 
   useEffect(() => {
     fetchCustomers();
@@ -64,7 +103,7 @@ export function useCustomer(searchQuery = "") {
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, filterType, sortBy]);
 
   // 🌟 Toggle Block Handler
   const toggleBlockCustomer = async (id: number) => {
@@ -72,13 +111,39 @@ export function useCustomer(searchQuery = "") {
       const res = await toggleBlockCustomerApi(id);
       toast.success(res.message || "Customer status updated");
       // Instant UI update
-      setCustomerList(prev => 
-        prev.map(c => c.id === id ? { ...c, is_active: !c.is_active } : c)
+      setCustomerList((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, is_active: !c.is_active } : c))
       );
     } catch (err: any) {
       const msg = extractErrorMessages(err);
       toast.error(msg);
     }
+  };
+
+  // 📜 Open Customer Orders Modal
+  const openCustomerOrders = async (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsOrdersModalOpen(true);
+    setLoadingOrders(true);
+    try {
+      const res = await getCustomerOrdersApi(customer.id);
+      if (res && res.orders) {
+        setCustomerOrders(res.orders);
+      } else {
+        setCustomerOrders([]);
+      }
+    } catch (err: any) {
+      toast.error(extractErrorMessages(err));
+      setCustomerOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const closeCustomerOrders = () => {
+    setIsOrdersModalOpen(false);
+    setSelectedCustomer(null);
+    setCustomerOrders([]);
   };
 
   return {
@@ -90,7 +155,17 @@ export function useCustomer(searchQuery = "") {
     totalCount,
     hasNextPage,
     hasPreviousPage,
+    filterType,
+    setFilterType,
+    sortBy,
+    setSortBy,
     fetchCustomers,
-    toggleBlockCustomer, // 👈 Exported
+    toggleBlockCustomer,
+    selectedCustomer,
+    customerOrders,
+    loadingOrders,
+    isOrdersModalOpen,
+    openCustomerOrders,
+    closeCustomerOrders,
   };
 }
