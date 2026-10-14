@@ -16,17 +16,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === '/login';
 
-  // 1. Not Authenticated -> Redirect to Login
-  if (!isAuthenticated && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // 2. Authenticated & Trying to access Login -> Redirect to Home
-  if (isAuthenticated && isLoginPage) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // 🔒 3. Extract Role directly from JWT Access Token Payload
+  // 🔒 1. Extract Role directly from JWT Access Token Payload
   let userRole: string | null = null;
   if (accessToken) {
     userRole = decodeJwtRole(accessToken);
@@ -37,9 +27,23 @@ export function middleware(request: NextRequest) {
     userRole = request.cookies.get('user_role')?.value ?? null;
   }
 
-  // 🔒 4. Role Protection: If Employee tries to access Admin-Only pages directly
+  const isStaffOrAdmin = userRole === 'admin' || userRole === 'employee';
+
+  // 1. Not Authenticated OR Not Staff/Admin -> Redirect to Login
+  if (!isLoginPage) {
+    if (!isAuthenticated || !isStaffOrAdmin) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
+  // 2. Authenticated Staff/Admin & Trying to access Login -> Redirect to Dashboard
+  if (isAuthenticated && isStaffOrAdmin && isLoginPage) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // 🔒 3. Role Protection: If Employee tries to access Admin-Only pages directly
   const adminOnlyPaths = ['/customers', '/revenue', '/employees', '/settings'];
-  if (isAuthenticated && userRole === 'employee' && adminOnlyPaths.some((path) => pathname.startsWith(path))) {
+  if (userRole === 'employee' && adminOnlyPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
