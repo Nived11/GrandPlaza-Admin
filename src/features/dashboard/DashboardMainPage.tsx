@@ -12,6 +12,7 @@ import OperationsHealthCard from './components/OperationsHealthCard';
 import PaymentBreakdownCard from './components/PaymentBreakdownCard';
 import RecentOrdersWidget from './components/RecentOrdersWidget';
 import DashboardQuickActions from './components/DashboardQuickActions';
+import FleetDistanceCard from './components/FleetDistanceCard';
 
 export default function DashboardMainPage() {
   const {
@@ -87,20 +88,32 @@ export default function DashboardMainPage() {
         />
       </div>
 
-      {/* 6. Operations & Finance: Kitchen Rush Hours & Payment Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      {/* 6. Operations, Fleet Ride & Payment Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Kitchen Rush Hours & Fulfillment Health */}
-        <OperationsHealthCard
-          metrics={data?.operations_metrics}
-          livePipeline={data?.live_pipeline}
-          periodLabel={data?.period_label || 'Today'}
-        />
+        <div className="lg:col-span-1">
+          <OperationsHealthCard
+            metrics={data?.operations_metrics}
+            livePipeline={data?.live_pipeline}
+            periodLabel={data?.period_label || 'Today'}
+          />
+        </div>
+
+        {/* 🏍️ Fleet & Delivery Boy Distance Tracking */}
+        <div className="lg:col-span-1">
+          <FleetDistanceCard
+            metrics={data?.fleet_distance}
+            periodLabel={data?.period_label || 'Today'}
+          />
+        </div>
 
         {/* Payment Methods (Online UPI vs COD) */}
-        <PaymentBreakdownCard
-          payment={data?.payment_breakdown}
-          periodLabel={data?.period_label || 'Today'}
-        />
+        <div className="lg:col-span-1">
+          <PaymentBreakdownCard
+            payment={data?.payment_breakdown}
+            periodLabel={data?.period_label || 'Today'}
+          />
+        </div>
       </div>
 
       {/* 7. Real-Time Recent Orders Feed */}

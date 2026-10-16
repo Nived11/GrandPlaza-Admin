@@ -73,6 +73,24 @@ export interface RecentOrder {
   created_at: string;
 }
 
+export interface FleetRiderStat {
+  id: number;
+  name: string;
+  employee_id: string;
+  vehicle_number: string;
+  today_km: number;
+  period_km: number;
+  total_km: number;
+  delivered_count: number;
+}
+
+export interface FleetDistanceMetrics {
+  period_fleet_km: number;
+  today_fleet_km: number;
+  avg_km_per_order: number;
+  riders: FleetRiderStat[];
+}
+
 export interface DashboardData {
   period: DashboardPeriod;
   period_label: string;
@@ -86,5 +104,6 @@ export interface DashboardData {
   all_time_top_selling?: TopSellingItem[];
   category_distribution?: CategoryDistributionItem[];
   operations_metrics?: OperationsMetrics;
+  fleet_distance?: FleetDistanceMetrics;
   recent_orders: RecentOrder[];
 }

@@ -12,6 +12,10 @@ import {
   Loader2,
   ExternalLink,
   Crosshair,
+  Bike,
+  IndianRupee,
+  Calculator,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +48,10 @@ export default function TimingAndLocationSettings({
     latitude: settings.latitude ?? 9.9312,
     longitude: settings.longitude ?? 76.2673,
     delivery_radius: settings.delivery_radius || 10,
+    base_delivery_charge: settings.base_delivery_charge ?? settings.baseDeliveryCharge ?? 20,
+    base_delivery_distance: settings.base_delivery_distance ?? settings.baseDeliveryDistance ?? 1.0,
+    per_km_charge: settings.per_km_charge ?? settings.perKmCharge ?? 10,
+    free_delivery_threshold: (settings.free_delivery_threshold ?? settings.freeDeliveryThreshold ?? "") as string | number,
   });
 
   const [isLocating, setIsLocating] = useState(false);
@@ -94,6 +102,20 @@ export default function TimingAndLocationSettings({
       latitude: Number(formData.latitude),
       longitude: Number(formData.longitude),
       delivery_radius: Number(formData.delivery_radius),
+      base_delivery_charge: Number(formData.base_delivery_charge),
+      baseDeliveryCharge: Number(formData.base_delivery_charge),
+      base_delivery_distance: Number(formData.base_delivery_distance),
+      baseDeliveryDistance: Number(formData.base_delivery_distance),
+      per_km_charge: Number(formData.per_km_charge),
+      perKmCharge: Number(formData.per_km_charge),
+      free_delivery_threshold:
+        formData.free_delivery_threshold !== "" && formData.free_delivery_threshold !== null
+          ? Number(formData.free_delivery_threshold)
+          : null,
+      freeDeliveryThreshold:
+        formData.free_delivery_threshold !== "" && formData.free_delivery_threshold !== null
+          ? Number(formData.free_delivery_threshold)
+          : null,
     });
   };
 
@@ -271,6 +293,131 @@ export default function TimingAndLocationSettings({
             }}
           />
         </div>
+      </div>
+
+      {/* 3. Distance-Based Delivery Pricing Configuration */}
+      <div className="bg-white rounded-3xl border border-brand-gold/20 p-5 sm:p-7 shadow-sm space-y-6">
+        <div className="border-b border-brand-gold/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-brand-green-dark flex items-center gap-2">
+              <Bike size={18} className="text-brand-gold" />
+              <span>Distance-Based <span className="text-brand-gold">Delivery Pricing</span></span>
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Set the per-kilometer delivery fee calculated live in checkout for customers.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
+            Live in Checkout
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Base Charge */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+              <IndianRupee size={12} className="text-brand-gold" />
+              <span>Base Delivery Fee (₹)</span>
+            </label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              name="base_delivery_charge"
+              value={formData.base_delivery_charge}
+              onChange={handleChange}
+              placeholder="e.g. 20"
+              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+            />
+            <p className="text-[10px] text-gray-400">Starting minimum charge</p>
+          </div>
+
+          {/* Base Distance */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+              <Radar size={12} className="text-brand-gold" />
+              <span>Base Included (KM)</span>
+            </label>
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              name="base_delivery_distance"
+              value={formData.base_delivery_distance}
+              onChange={handleChange}
+              placeholder="e.g. 1.0"
+              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+            />
+            <p className="text-[10px] text-gray-400">Covered in base fee</p>
+          </div>
+
+          {/* Per KM Charge */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+              <IndianRupee size={12} className="text-brand-gold" />
+              <span>Per KM Rate (₹ / KM)</span>
+            </label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              name="per_km_charge"
+              value={formData.per_km_charge}
+              onChange={handleChange}
+              placeholder="e.g. 10"
+              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+            />
+            <p className="text-[10px] text-gray-400">Extra charge per KM beyond base</p>
+          </div>
+
+          {/* Free Delivery Threshold */}
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+              <Sparkles size={12} className="text-brand-gold" />
+              <span>Free Delivery Above (₹)</span>
+            </label>
+            <input
+              type="number"
+              step="10"
+              min="0"
+              name="free_delivery_threshold"
+              value={formData.free_delivery_threshold}
+              onChange={handleChange}
+              placeholder="Leave empty to disable"
+              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+            />
+            <p className="text-[10px] text-gray-400">Optional free delivery rule</p>
+          </div>
+        </div>
+
+        {/* Live Calculation Preview */}
+        <div className="bg-brand-cream/50 rounded-2xl p-4 border border-brand-gold/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-brand-green-dark text-brand-gold flex items-center justify-center shrink-0 shadow-xs">
+              <Calculator size={15} />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-brand-green-dark uppercase tracking-tight">Live Fee Preview</h4>
+              <p className="text-[11px] text-gray-600">Sample customer charges with your current rates</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {[2, 4, 8].map((sampleKm) => {
+              const baseC = Number(formData.base_delivery_charge) || 0;
+              const baseD = Number(formData.base_delivery_distance) || 1;
+              const perKm = Number(formData.per_km_charge) || 10;
+              const extraD = Math.max(0, sampleKm - baseD);
+              const fee = Math.round(baseC + extraD * perKm);
+              return (
+                <div key={sampleKm} className="bg-white px-3 py-1.5 rounded-xl border border-brand-gold/30 shadow-xs flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-gray-500">{sampleKm} KM:</span>
+                  <span className="text-xs font-black text-brand-green-dark">₹{fee}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Action Button */}
         <div className="flex justify-end pt-4 border-t border-brand-gold/10">
@@ -282,12 +429,12 @@ export default function TimingAndLocationSettings({
             {isSaving ? (
               <>
                 <Loader2 size={15} className="animate-spin text-brand-gold" />
-                <span>Saving Schedule & Map...</span>
+                <span>Saving Schedule, Map & Rates...</span>
               </>
             ) : (
               <>
                 <Save size={15} className="text-brand-gold" />
-                <span>Save Timings & Location</span>
+                <span>Save Timings, Location & Delivery Rates</span>
               </>
             )}
           </button>

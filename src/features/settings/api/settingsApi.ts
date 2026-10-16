@@ -10,6 +10,14 @@ export interface SiteSettings {
   latitude: number | string;
   longitude: number | string;
   delivery_radius: number | string;
+  base_delivery_charge?: number | string;
+  base_delivery_distance?: number | string;
+  per_km_charge?: number | string;
+  free_delivery_threshold?: number | string | null;
+  baseDeliveryCharge?: number | string;
+  baseDeliveryDistance?: number | string;
+  perKmCharge?: number | string;
+  freeDeliveryThreshold?: number | string | null;
   footer_description: string;
   working_hours_mon_sat: string;
   working_hours_sunday: string;

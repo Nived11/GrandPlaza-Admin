@@ -137,6 +137,17 @@ export default function DeliverySection({
                         <Truck className="w-2.5 h-2.5" /> {vehicleNum || "N/A"}
                       </span>
                     </div>
+
+                    {/* 🏍️ KM Ride Statistics Badges */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                      <span className="text-[9px] sm:text-[10px] font-black text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200 flex items-center gap-1">
+                        <Bike className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-600" />
+                        <span>Today: <strong>{rider.today_km ?? 0} KM</strong></span>
+                      </span>
+                      <span className="text-[9px] sm:text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                        Total: {rider.total_km ?? 0} KM ({rider.total_deliveries ?? 0} orders)
+                      </span>
+                    </div>
                     
                     {/* Bottom Row: Username + Phone + Email */}
                     <div className="flex items-center gap-2 flex-wrap text-gray-700 font-semibold text-[9px] sm:text-[11px]">
