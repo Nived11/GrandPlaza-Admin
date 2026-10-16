@@ -83,6 +83,15 @@ export default function CustomerInvoiceModal({ order, isOpen, onClose }: Custome
               <span>Date & Time:</span>
               <span className="font-medium text-gray-900">{formattedDate}, {formattedTime}</span>
             </div>
+            {order.packed_at && (
+              <div className="flex justify-between text-gray-600">
+                <span>Food Packed:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date(order.packed_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                  {order.packing_duration_mins != null && ` (${order.packing_duration_mins}m prep)`}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-gray-600">
               <span>Customer:</span>
               <span className="font-semibold text-gray-900">{order.customer_name}</span>
@@ -95,6 +104,12 @@ export default function CustomerInvoiceModal({ order, isOpen, onClose }: Custome
               <span className="font-semibold block text-gray-800">Delivery Address:</span>
               <span className="text-[11px] text-gray-600 break-words">{order.delivery_address}</span>
             </div>
+            {order.special_instructions && (
+              <div className="text-gray-600 pt-1 border-t border-gray-200/60">
+                <span className="font-semibold block text-gray-800">Special Instructions:</span>
+                <span className="text-[11px] text-amber-800 font-medium break-words italic">{order.special_instructions}</span>
+              </div>
+            )}
           </div>
 
           {/* Items Table */}

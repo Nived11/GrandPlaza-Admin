@@ -131,10 +131,25 @@ export default function OrderDetailsModal({
               </div>
               <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-200/60">
                 <span className="flex items-center gap-1">
-                  <Clock size={12} /> Ordered:
+                  <Clock size={12} /> Placed:
                 </span>
                 <span className="font-medium text-gray-800">{formattedDate} at {formattedTime}</span>
               </div>
+              {order.packed_at && (
+                <div className="flex items-center justify-between text-xs text-emerald-700 pt-1 border-t border-gray-200/40">
+                  <span className="flex items-center gap-1 font-semibold">
+                    <PackageCheck size={13} className="text-emerald-600" /> Food Packed:
+                  </span>
+                  <span className="font-bold text-emerald-800">
+                    {new Date(order.packed_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    {order.packing_duration_mins != null && (
+                      <span className="ml-1 text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                        {order.packing_duration_mins}m prep
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

@@ -41,6 +41,8 @@ export interface AdminOrder {
   updated_at: string;
   payment_method?: string;
   delivery_boy?: DeliveryBoyInfo | null;
+  packed_at?: string | null;
+  packing_duration_mins?: number | null;
 }
 
 export interface OrderFilterParams {

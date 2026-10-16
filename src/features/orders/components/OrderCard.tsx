@@ -105,13 +105,25 @@ export default function OrderCard({
             {statusBadge()}
           </div>
 
-          <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 font-medium">
-            <Clock size={13} className="text-gray-400" />
-            <span>
-              {elapsedMins === 0 ? 'Just now' : `${elapsedMins} mins ago`}
-            </span>
-            <span>•</span>
-            <span>{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-xs text-gray-500 font-medium">
+            <div className="flex items-center gap-1">
+              <Clock size={12} className="text-gray-400" />
+              <span>
+                Placed: {new Date(order.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+              </span>
+            </div>
+            {order.packed_at ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 text-[11px]">
+                <PackageCheck size={11} />
+                Packed: {new Date(order.packed_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                {order.packing_duration_mins != null && ` (${order.packing_duration_mins}m)`}
+              </span>
+            ) : isKitchenActive ? (
+              <span className="inline-flex items-center gap-1 text-orange-700 font-medium text-[11px] bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">
+                {elapsedMins}m in kitchen
+              </span>
+            ) : null}
+            <span>• {order.items.length} {order.items.length === 1 ? 'item' : 'items'}</span>
           </div>
         </div>
 
