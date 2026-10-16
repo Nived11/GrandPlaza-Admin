@@ -16,6 +16,9 @@ export const getStaffOrdersApi = async (params: OrderFilterParams = {}) => {
   if (params.page) {
     query.append('page', String(params.page));
   }
+  if (params.page_size) {
+    query.append('page_size', String(params.page_size));
+  }
 
   const queryString = query.toString() ? `?${query.toString()}` : '';
   const response = await axiosInstance.get(`/orders/staff/orders${queryString}`);

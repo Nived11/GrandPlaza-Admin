@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { toast } from "sonner";
 import BookingHeader from "./components/BookingHeader";
 import BookingStats from "./components/BookingStats";
 import BookingSearch from "./components/BookingSearch";
@@ -8,6 +9,7 @@ import BookingTable from "./components/BookingTable";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Pagination from "@/components/ui/Pagination";
 import { useBooking } from "./hooks/useBooking";
+import { exportBookingsToExcel } from "@/utils/excelExport";
 
 export default function BookingMainPage() {
   const {
@@ -134,6 +136,26 @@ export default function BookingMainPage() {
     }
   };
 
+  // Export Bookings to Excel
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportBookings = () => {
+    try {
+      setIsExporting(true);
+      if (bookingList.length === 0) {
+        toast.warning("No table reservations available to export.");
+        return;
+      }
+      const dataToExport = filteredBookings.length > 0 ? filteredBookings : bookingList;
+      exportBookingsToExcel(dataToExport);
+      toast.success(`✅ Downloaded ${dataToExport.length} table reservations into Excel!`);
+    } catch (err: any) {
+      console.error("Failed to export reservations:", err);
+      toast.error(err?.message || "Failed to generate Excel sheet.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full text-slate-900 p-2 sm:p-4 lg:p-4 font-sans antialiased space-y-4 sm:space-y-6 overflow-x-hidden">
       
@@ -141,6 +163,8 @@ export default function BookingMainPage() {
       <BookingHeader
         totalBookings={metrics.total}
         pendingCount={metrics.pending}
+        onExportExcel={handleExportBookings}
+        isExporting={isExporting}
       />
 
       {/* 📊 Interactive Metric Filter Cards */}

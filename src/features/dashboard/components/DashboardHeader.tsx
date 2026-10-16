@@ -8,7 +8,8 @@ import {
   UtensilsCrossed, 
   ArrowUpRight,
   Calendar,
-  ChefHat
+  ChefHat,
+  FileSpreadsheet
 } from 'lucide-react';
 import { DashboardPeriod } from '../types/dashboardTypes';
 
@@ -21,6 +22,8 @@ interface DashboardHeaderProps {
   onRefresh: () => void;
   refreshing: boolean;
   activeOrdersCount: number;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
 }
 
 export default function DashboardHeader({
@@ -32,6 +35,8 @@ export default function DashboardHeader({
   onRefresh,
   refreshing,
   activeOrdersCount,
+  onExportExcel,
+  isExporting,
 }: DashboardHeaderProps) {
   const periods: { id: DashboardPeriod; label: string }[] = [
     { id: 'today', label: 'Today' },
@@ -77,8 +82,26 @@ export default function DashboardHeader({
           </div>
         </div>
 
-        {/* Action Buttons: Live Kitchen POS & Refresh */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        {/* Action Buttons: Export Report, Live Kitchen POS & Refresh */}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {/* Master Export Excel Button */}
+          {onExportExcel && (
+            <button
+              type="button"
+              onClick={onExportExcel}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-900 hover:bg-emerald-800 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-60"
+              title="Download Master Excel Report (Orders, Bookings, Customers)"
+            >
+              {isExporting ? (
+                <RefreshCw size={15} className="animate-spin text-emerald-300" />
+              ) : (
+                <FileSpreadsheet size={15} className="text-emerald-300" />
+              )}
+              <span>{isExporting ? 'Exporting...' : 'Export All (Excel)'}</span>
+            </button>
+          )}
+
           {/* Direct Link to Live Kitchen POS */}
           <Link
             href="/orders"

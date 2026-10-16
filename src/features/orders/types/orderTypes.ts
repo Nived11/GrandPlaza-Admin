@@ -50,4 +50,5 @@ export interface OrderFilterParams {
   payment_status?: string;
   search?: string;
   page?: number;
+  page_size?: number;
 }

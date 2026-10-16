@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChefHat, ShoppingBag, UtensilsCrossed, AlertCircle, Printer } from 'lucide-react';
+import { ChefHat, ShoppingBag, UtensilsCrossed, AlertCircle, Printer, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLiveOrders } from './hooks/useLiveOrders';
+import { getStaffOrdersApi } from './api/orderApi';
+import { exportOrdersToExcel } from '@/utils/excelExport';
 import OrderTabs from './components/OrderTabs';
 import OrderCard from './components/OrderCard';
 import KOTReceiptModal from './components/KOTReceiptModal';
@@ -43,6 +45,39 @@ export default function OrdersMainPage() {
 
   // Warning Modal for Accidental OFF Protection
   const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportOrders = async () => {
+    try {
+      setIsExporting(true);
+      toast.info('📊 Preparing Excel sheet for orders...');
+      
+      const response = await getStaffOrdersApi({ page_size: 10000 });
+      let allOrders: AdminOrder[] = [];
+      if (Array.isArray(response)) {
+        allOrders = response;
+      } else if (response && Array.isArray(response.results)) {
+        allOrders = response.results;
+      } else if (response && Array.isArray(response.data)) {
+        allOrders = response.data;
+      } else {
+        allOrders = orders;
+      }
+
+      if (allOrders.length === 0) {
+        toast.warning('No orders found to export.');
+        return;
+      }
+
+      exportOrdersToExcel(allOrders);
+      toast.success(`✅ Downloaded ${allOrders.length} orders into Excel sheet!`);
+    } catch (err: any) {
+      console.error('Failed to export orders:', err);
+      toast.error(err?.message || 'Failed to generate Excel sheet.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleRequestToggleAutoPrint = () => {
     if (autoPrintEnabled) {
@@ -80,8 +115,24 @@ export default function OrdersMainPage() {
           </p>
         </div>
 
-        {/* Quick Kitchen Metric Pills */}
+        {/* Quick Kitchen Metric Pills & Export Action */}
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* Export Excel Button */}
+          <button
+            type="button"
+            onClick={handleExportOrders}
+            disabled={isExporting}
+            className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-900 hover:bg-emerald-800 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-60"
+            title="Download all orders details into an Excel sheet"
+          >
+            {isExporting ? (
+              <Loader2 size={15} className="animate-spin text-emerald-300" />
+            ) : (
+              <FileSpreadsheet size={15} className="text-emerald-300" />
+            )}
+            <span>{isExporting ? 'Exporting...' : 'Export Excel'}</span>
+          </button>
+
           {/* Auto-print badge indicator */}
           <div className={`hidden lg:flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border text-xs font-bold ${
             autoPrintEnabled

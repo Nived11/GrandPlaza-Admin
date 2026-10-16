@@ -1,16 +1,20 @@
 "use client";
 
 import React from "react";
-import { CalendarCheck, Utensils } from "lucide-react";
+import { CalendarCheck, Utensils, FileSpreadsheet, Loader2 } from "lucide-react";
 
 interface BookingHeaderProps {
   totalBookings: number;
   pendingCount: number;
+  onExportExcel?: () => void;
+  isExporting?: boolean;
 }
 
 export default function BookingHeader({
   totalBookings,
   pendingCount,
+  onExportExcel,
+  isExporting,
 }: BookingHeaderProps) {
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-brand-green-dark p-2 sm:p-4">
@@ -40,6 +44,23 @@ export default function BookingHeader({
           </p>
         </div>
       </div>
+
+      {onExportExcel && (
+        <button
+          type="button"
+          onClick={onExportExcel}
+          disabled={isExporting}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-green-dark hover:bg-[#16503d] text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-60 shrink-0"
+          title="Download all table reservations into an Excel sheet"
+        >
+          {isExporting ? (
+            <Loader2 size={15} className="animate-spin text-amber-300" />
+          ) : (
+            <FileSpreadsheet size={15} className="text-amber-300" />
+          )}
+          <span>{isExporting ? "Exporting..." : "Export Excel"}</span>
+        </button>
+      )}
     </header>
   );
 }

@@ -1,9 +1,17 @@
 "use client";
 
 import React from "react";
-import { Users } from "lucide-react";
+import { Users, FileSpreadsheet, Loader2 } from "lucide-react";
 
-export default function CustomerHeader() {
+interface CustomerHeaderProps {
+  onExportExcel?: () => void;
+  isExporting?: boolean;
+}
+
+export default function CustomerHeader({
+  onExportExcel,
+  isExporting,
+}: CustomerHeaderProps) {
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-brand-green-dark p-2 sm:p-6">
       <div className="flex items-center gap-3">
@@ -18,11 +26,28 @@ export default function CustomerHeader() {
           </h1>
 
           <p className="text-[10px] sm:text-sm font-medium text-gray-600 font-sans mt-0.5 leading-tight">
-            Manage customer information
+            Manage customer patrons and purchase histories
           </p>
         </div>
 
       </div>
+
+      {onExportExcel && (
+        <button
+          type="button"
+          onClick={onExportExcel}
+          disabled={isExporting}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-green-dark hover:bg-[#16503d] text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-60 shrink-0"
+          title="Download customers list into an Excel sheet"
+        >
+          {isExporting ? (
+            <Loader2 size={15} className="animate-spin text-amber-300" />
+          ) : (
+            <FileSpreadsheet size={15} className="text-amber-300" />
+          )}
+          <span>{isExporting ? "Exporting..." : "Export Excel"}</span>
+        </button>
+      )}
     </header>
   );
 }

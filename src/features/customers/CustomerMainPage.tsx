@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import CustomerHeader from './components/CustomerHeader';
 import CustomerSearch from './components/CustomerSearch';
 import CustomerTable from './components/CustomerTable';
@@ -8,9 +9,11 @@ import CustomerTableSkeleton from './components/CustomerTableSkeleton';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
 import Pagination from '@/components/ui/Pagination';
 import { useCustomer } from './hooks/useCustomer';
+import { exportCustomersToExcel } from '@/utils/excelExport';
 
 export default function CustomerMainPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
 
   const {
     customerList,
@@ -34,11 +37,31 @@ export default function CustomerMainPage() {
     closeCustomerOrders,
   } = useCustomer(searchQuery);
 
+  const handleExportCustomers = () => {
+    try {
+      setIsExporting(true);
+      if (customerList.length === 0) {
+        toast.warning('No customers available to export.');
+        return;
+      }
+      exportCustomersToExcel(customerList);
+      toast.success(`✅ Downloaded ${customerList.length} customer records into Excel!`);
+    } catch (err: any) {
+      console.error('Failed to export customers:', err);
+      toast.error(err?.message || 'Failed to generate Excel sheet.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full text-slate-900 p-2 sm:p-4 lg:p-6 font-sans antialiased space-y-4 sm:space-y-6 overflow-x-hidden">
       
       {/* 🟢 Header */}
-      <CustomerHeader />
+      <CustomerHeader
+        onExportExcel={handleExportCustomers}
+        isExporting={isExporting}
+      />
 
       {/* 🔍 Search & Filter Bar */}
       <div className="px-2 sm:px-6">
