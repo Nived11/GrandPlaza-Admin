@@ -25,6 +25,8 @@ export interface SiteSettings {
   closing_time: string | null;
   is_manually_open: boolean;
   is_open?: boolean;
+  is_cod_enabled?: boolean;
+  isCodEnabled?: boolean;
   instagram_url: string;
   facebook_url: string;
   twitter_url: string;

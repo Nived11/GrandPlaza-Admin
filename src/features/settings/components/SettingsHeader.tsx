@@ -1,18 +1,22 @@
 "use client";
 
 import React from "react";
-import { Sliders, Store, Power } from "lucide-react";
+import { Sliders, Store, Power, Banknote } from "lucide-react";
 
 interface SettingsHeaderProps {
   isManuallyOpen: boolean;
   isOpenStatus?: boolean;
   onToggleShop: () => void;
+  isCodEnabled?: boolean;
+  onToggleCod?: () => void;
 }
 
 export default function SettingsHeader({
   isManuallyOpen,
   isOpenStatus,
   onToggleShop,
+  isCodEnabled = false,
+  onToggleCod,
 }: SettingsHeaderProps) {
   const storeIsOpen = isManuallyOpen && (isOpenStatus !== false);
 
@@ -30,40 +34,76 @@ export default function SettingsHeader({
 
           <p className="text-[10px] sm:text-sm font-medium text-gray-600 font-sans mt-0.5 leading-tight flex items-center gap-1.5">
             <Store size={13} className="text-brand-gold shrink-0" />
-            <span>Configure restaurant profile, working hours, delivery radius & FAQs</span>
+            <span>Configure restaurant profile, working hours, delivery radius & payment options</span>
           </p>
         </div>
       </div>
 
-      {/* Live Store Toggle Switch */}
-      <div className="flex items-center gap-3 bg-white border border-brand-gold/30 px-4 py-2.5 rounded-2xl shadow-xs self-start sm:self-auto">
-        <div className="text-right">
-          <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-            Store Status
-          </p>
-          <p className={`text-xs font-black uppercase ${
-            storeIsOpen ? "text-emerald-700" : "text-rose-700"
-          }`}>
-            {storeIsOpen ? "Shop Open" : "Shop Closed"}
-          </p>
+      {/* Live Action Toggles */}
+      <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
+        {/* Live Store Toggle Switch */}
+        <div className="flex items-center gap-3 bg-white border border-brand-gold/30 px-4 py-2.5 rounded-2xl shadow-xs">
+          <div className="text-right">
+            <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
+              Store Status
+            </p>
+            <p className={`text-xs font-black uppercase ${
+              storeIsOpen ? "text-emerald-700" : "text-rose-700"
+            }`}>
+              {storeIsOpen ? "Shop Open" : "Shop Closed"}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onToggleShop}
+            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              storeIsOpen ? "bg-emerald-600" : "bg-gray-300"
+            }`}
+            title="Click to toggle shop open/closed"
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                storeIsOpen ? "translate-x-7 text-emerald-600" : "translate-x-0 text-gray-400"
+              }`}
+            >
+              <Power size={12} strokeWidth={2.5} />
+            </span>
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleShop}
-          className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-            storeIsOpen ? "bg-emerald-600" : "bg-gray-300"
-          }`}
-          title="Click to toggle shop open/closed"
-        >
-          <span
-            className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
-              storeIsOpen ? "translate-x-7 text-emerald-600" : "translate-x-0 text-gray-400"
-            }`}
-          >
-            <Power size={12} strokeWidth={2.5} />
-          </span>
-        </button>
+        {/* Live Cash on Delivery (COD) Toggle Switch */}
+        {onToggleCod && (
+          <div className="flex items-center gap-3 bg-white border border-brand-gold/30 px-4 py-2.5 rounded-2xl shadow-xs">
+            <div className="text-right">
+              <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">
+                Cash on Delivery
+              </p>
+              <p className={`text-xs font-black uppercase ${
+                isCodEnabled ? "text-emerald-700" : "text-amber-800"
+              }`}>
+                {isCodEnabled ? "COD Allowed" : "COD Disabled"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onToggleCod}
+              className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                isCodEnabled ? "bg-emerald-600" : "bg-gray-300"
+              }`}
+              title="Click to toggle Cash on Delivery"
+            >
+              <span
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                  isCodEnabled ? "translate-x-7 text-emerald-600" : "translate-x-0 text-gray-400"
+                }`}
+              >
+                <Banknote size={12} strokeWidth={2.5} />
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -19,6 +19,7 @@ export default function SettingsMainPage() {
     error,
     saveSettings,
     toggleShopOpen,
+    toggleCod,
     faqs,
     faqsLoading,
     addFaq,
@@ -29,11 +30,13 @@ export default function SettingsMainPage() {
 
   return (
     <div className="min-h-screen w-full text-slate-900 p-2 sm:p-4 lg:p-4 font-sans antialiased space-y-4 sm:space-y-6 overflow-x-hidden">
-      {/* 🟢 Luxury Settings Header with Live Shop Toggle */}
+      {/* 🟢 Luxury Settings Header with Live Shop Toggle & COD Toggle */}
       <SettingsHeader
         isManuallyOpen={settings.is_manually_open}
         isOpenStatus={settings.is_open}
         onToggleShop={toggleShopOpen}
+        isCodEnabled={Boolean(settings.is_cod_enabled ?? settings.isCodEnabled)}
+        onToggleCod={toggleCod}
       />
 
       {/* 📑 Category Tab Cards */}

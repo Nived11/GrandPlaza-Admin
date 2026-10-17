@@ -11,6 +11,8 @@ import {
   Calendar,
   Save,
   Loader2,
+  Banknote,
+  Power,
 } from "lucide-react";
 
 interface GeneralSettingsFormProps {
@@ -32,6 +34,7 @@ export default function GeneralSettingsForm({
     footer_description: settings.footer_description || "",
     working_hours_mon_sat: settings.working_hours_mon_sat || "",
     working_hours_sunday: settings.working_hours_sunday || "",
+    is_cod_enabled: Boolean(settings.is_cod_enabled ?? settings.isCodEnabled),
   });
 
   const handleChange = (
@@ -169,6 +172,54 @@ export default function GeneralSettingsForm({
               placeholder="e.g. 11:00 AM - 11:30 PM"
               className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
             />
+          </div>
+        </div>
+
+        {/* Payment Methods & Checkout Configuration */}
+        <div className="border-t border-brand-gold/10 pt-5 space-y-4">
+          <div>
+            <h3 className="text-xs sm:text-base font-black uppercase tracking-tight text-brand-green-dark flex items-center gap-2">
+              <Banknote size={17} className="text-brand-gold" />
+              <span>Payment Methods & <span className="text-brand-gold">Checkout Policy</span></span>
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Control whether Cash on Delivery (COD) is permitted during customer checkout.
+            </p>
+          </div>
+
+          <div className="bg-brand-cream/40 rounded-2xl p-4 sm:p-5 border border-brand-gold/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase text-brand-green-dark">Cash on Delivery (COD)</span>
+                <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                  formData.is_cod_enabled
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : "bg-gray-100 text-gray-700 border border-gray-300"
+                }`}>
+                  {formData.is_cod_enabled ? "COD Allowed" : "COD Disabled (Prepaid Only)"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 max-w-xl leading-relaxed">
+                When disabled (recommended), customers can only pay online via UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, or NetBanking. COD is completely hidden in the customer checkout app.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, is_cod_enabled: !formData.is_cod_enabled })}
+              className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                formData.is_cod_enabled ? "bg-emerald-600" : "bg-gray-300"
+              }`}
+              title="Toggle Cash on Delivery"
+            >
+              <span
+                className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                  formData.is_cod_enabled ? "translate-x-8 text-emerald-600" : "translate-x-0 text-gray-400"
+                }`}
+              >
+                <Power size={13} strokeWidth={2.5} />
+              </span>
+            </button>
           </div>
         </div>
 

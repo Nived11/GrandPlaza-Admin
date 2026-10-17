@@ -30,6 +30,7 @@ const initialSettingsState: SiteSettings = {
   closing_time: "23:00:00",
   is_manually_open: true,
   is_open: true,
+  is_cod_enabled: false,
   instagram_url: "",
   facebook_url: "",
   twitter_url: "",
@@ -132,6 +133,28 @@ export function useSettings() {
     }
   };
 
+  // Quick Toggle Cash on Delivery (COD)
+  const toggleCod = async () => {
+    const currentState = Boolean(settings.is_cod_enabled ?? settings.isCodEnabled);
+    const nextState = !currentState;
+    try {
+      await updateSiteSettingsApi({ is_cod_enabled: nextState });
+      setSettings((prev) => ({
+        ...prev,
+        is_cod_enabled: nextState,
+        isCodEnabled: nextState,
+      }));
+      toast.success(
+        nextState
+          ? "Cash on Delivery (COD) ENABLED for checkout."
+          : "Cash on Delivery (COD) DISABLED. Prepaid online orders only."
+      );
+    } catch (err: any) {
+      const msg = extractErrorMessages(err);
+      toast.error(msg);
+    }
+  };
+
   // FAQ Actions
   const addFaq = async (data: { question: string; answer: string; is_active?: boolean }) => {
     try {
@@ -197,6 +220,7 @@ export function useSettings() {
     error,
     saveSettings,
     toggleShopOpen,
+    toggleCod,
     faqs,
     faqsLoading,
     addFaq,
