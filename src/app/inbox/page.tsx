@@ -2,7 +2,12 @@
 
 import React from "react";
 import InboxMainPage from "@/features/inbox/InboxMainPage";
+import AdminRoleGuard from "@/components/auth/AdminRoleGuard";
 
 export default function AdminInboxPage() {
-  return <InboxMainPage />;
+  return (
+    <AdminRoleGuard>
+      <InboxMainPage />
+    </AdminRoleGuard>
+  );
 }

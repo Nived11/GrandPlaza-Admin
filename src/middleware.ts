@@ -21,8 +21,11 @@ export function middleware(request: NextRequest) {
   if (accessToken) {
     userRole = decodeJwtRole(accessToken);
   }
+  if (!userRole && refreshToken) {
+    userRole = decodeJwtRole(refreshToken);
+  }
 
-  // Fallback if access token is missing or invalid
+  // Fallback if token decode fails
   if (!userRole) {
     userRole = request.cookies.get('user_role')?.value ?? null;
   }
@@ -36,15 +39,23 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Authenticated Staff/Admin & Trying to access Login -> Redirect to Dashboard
+  // 2. Authenticated Staff/Admin & Trying to access Login -> Redirect
   if (isAuthenticated && isStaffOrAdmin && isLoginPage) {
-    return NextResponse.redirect(new URL('/', request.url));
+    const defaultRoute = userRole === 'employee' ? '/orders' : '/';
+    return NextResponse.redirect(new URL(defaultRoute, request.url));
   }
 
-  // 🔒 3. Role Protection: If Employee tries to access Admin-Only pages directly
-  const adminOnlyPaths = ['/customers', '/revenue', '/employees', '/settings'];
-  if (userRole === 'employee' && adminOnlyPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // 🔒 3. Role Protection: If Kitchen Staff (employee) tries to access ANY Admin-Only pages
+  // Kitchen Staff are strictly restricted to Live Orders (/orders) and Menu (/menu)
+  if (userRole === 'employee') {
+    const employeeAllowedPrefixes = ['/orders', '/menu'];
+    const isAllowed = employeeAllowedPrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    );
+    if (!isAllowed) {
+      // Immediately bounce employee to /orders
+      return NextResponse.redirect(new URL('/orders', request.url));
+    }
   }
 
   return NextResponse.next();

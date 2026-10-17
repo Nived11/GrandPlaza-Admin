@@ -23,17 +23,19 @@ export const useAdminAuth = () => {
       // Save verified backend role & username for client-side routing & UI
       if (typeof window !== "undefined") {
         document.cookie = `user_role=${role}; path=/; max-age=2592000; SameSite=Lax`;
+        localStorage.setItem("user_role", role);
         localStorage.setItem("username", username);
       }
 
-      // Dynamic Toast based on Role
+      // Dynamic Toast & Landing Destination based on Role
       if (role === "admin") {
         toast.success("Welcome back, Admin!");
+        router.push("/");
       } else {
-        toast.success(`Welcome back, ${username}!`);
+        toast.success(`Welcome back, ${username}! (Kitchen Staff)`);
+        router.push("/orders");
       }
 
-      router.push("/");
       router.refresh();
     } catch (err: any) {
       const errorMessage = extractErrorMessages(err);

@@ -26,7 +26,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // 🛡️ Read role safely from the cookie instead of editable localStorage
+      // 🛡️ Read role safely from cookie & localStorage (fallback to employee for security)
       const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
@@ -34,30 +34,37 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
       };
       
       const cookieRole = getCookie("user_role");
-      setRole(cookieRole || "employee");
+      const localRole = localStorage.getItem("user_role");
+      const resolvedRole = cookieRole || localRole || "employee";
+      setRole(resolvedRole);
     }
   }, []);
 
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const navLinks = [
-    { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, roles: ["admin", "employee"] },
+    // 🔒 ADMIN-ONLY: Executive Financial Dashboard
+    { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} />, roles: ["admin"] },
+
+    // 👨‍🍳 SHARED: Kitchen Staff & Admin can manage live orders and menu availability
     { name: "Live Orders", path: "/orders", icon: <ShoppingBag size={20} />, roles: ["admin", "employee"] },
     { name: "Menu", path: "/menu", icon: <Utensils size={20} />, roles: ["admin", "employee"] },
-    { name: "Bookings", path: "/bookings", icon: <BookIcon size={20} />, roles: ["admin", "employee"] },
-    { name: "Inbox", path: "/inbox", icon: <Mail size={20} />, roles: ["admin", "employee"] }, 
-    { name: "Reviews", path: "/reviews", icon: <Star size={20} />, roles: ["admin", "employee"] },
-    
-    // 🔒 ADMIN-ONLY PAGES
+
+    // 🔒 ADMIN-ONLY PAGES: Blocked & Hidden for Kitchen Staff
+    { name: "Bookings", path: "/bookings", icon: <BookIcon size={20} />, roles: ["admin"] },
+    { name: "Inbox", path: "/inbox", icon: <Mail size={20} />, roles: ["admin"] }, 
+    { name: "Reviews", path: "/reviews", icon: <Star size={20} />, roles: ["admin"] },
     { name: "Customers", path: "/customers", icon: <Users size={20} />, roles: ["admin"] },
     { name: "Revenue", path: "/revenue", icon: <DollarSign size={20} />, roles: ["admin"] },
     { name: "Employees", path: "/employees", icon: <Users size={20} />, roles: ["admin"] },
     { name: "Settings", path: "/settings", icon: <Settings size={20} />, roles: ["admin"] },
   ];
 
-  const filteredNavLinks = navLinks.filter((link) => 
-    role === "admin" ? true : link.roles.includes("employee")
-  );
+  // 🛡️ Strictly filter sidebar items based on verified role
+  const filteredNavLinks = navLinks.filter((link) => {
+    if (role === "admin") return link.roles.includes("admin");
+    return link.roles.includes("employee");
+  });
 
   const isFull = isExpanded || isMobileOpen;
 
