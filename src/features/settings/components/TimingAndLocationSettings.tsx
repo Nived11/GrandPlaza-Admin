@@ -19,6 +19,7 @@ import {
   Plus,
   Minus,
   CheckCircle2,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,11 +52,16 @@ export default function TimingAndLocationSettings({
     latitude: settings.latitude ?? 9.9312,
     longitude: settings.longitude ?? 76.2673,
     delivery_radius: Number(settings.delivery_radius ?? settings.deliveryRadius ?? 10) || 10,
+    physical_address: settings.physical_address || "",
     base_delivery_charge: settings.base_delivery_charge ?? settings.baseDeliveryCharge ?? 20,
     base_delivery_distance: settings.base_delivery_distance ?? settings.baseDeliveryDistance ?? 1.0,
     per_km_charge: settings.per_km_charge ?? settings.perKmCharge ?? 10,
     free_delivery_threshold: (settings.free_delivery_threshold ?? settings.freeDeliveryThreshold ?? "") as string | number,
   });
+
+  const [showManualCoords, setShowManualCoords] = useState(false);
+  const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
   // Keep formData in sync when fresh settings are fetched
   useEffect(() => {
@@ -67,6 +73,7 @@ export default function TimingAndLocationSettings({
         latitude: settings.latitude ?? prev.latitude,
         longitude: settings.longitude ?? prev.longitude,
         delivery_radius: Number(settings.delivery_radius ?? settings.deliveryRadius ?? prev.delivery_radius) || 10,
+        physical_address: settings.physical_address ?? prev.physical_address,
         base_delivery_charge: settings.base_delivery_charge ?? settings.baseDeliveryCharge ?? prev.base_delivery_charge,
         base_delivery_distance: settings.base_delivery_distance ?? settings.baseDeliveryDistance ?? prev.base_delivery_distance,
         per_km_charge: settings.per_km_charge ?? settings.perKmCharge ?? prev.per_km_charge,
@@ -76,6 +83,67 @@ export default function TimingAndLocationSettings({
   }, [settings]);
 
   const [isLocating, setIsLocating] = useState(false);
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      );
+      const data = await res.json();
+      if (data && data.display_name) {
+        setFormData((prev) => ({
+          ...prev,
+          physical_address: data.display_name,
+        }));
+      }
+    } catch (e) {
+      console.error("Reverse geocoding error:", e);
+    }
+  };
+
+  const handleLocationChangeFromMap = (newLat: number, newLng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: newLat,
+      longitude: newLng,
+    }));
+    reverseGeocode(newLat, newLng);
+  };
+
+  const handleSearchPlace = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const query = addressSearchQuery.trim() || formData.physical_address.trim();
+    if (!query) {
+      toast.error("Please enter a place name or address to search");
+      return;
+    }
+    setIsSearchingAddress(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
+      );
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const first = data[0];
+        const newLat = Number(parseFloat(first.lat).toFixed(6));
+        const newLng = Number(parseFloat(first.lon).toFixed(6));
+        setFormData((prev) => ({
+          ...prev,
+          latitude: newLat,
+          longitude: newLng,
+          physical_address: first.display_name,
+        }));
+        setAddressSearchQuery("");
+        toast.success(`Found place: ${first.display_name.slice(0, 45)}...`);
+      } else {
+        toast.error("No locations found for this place. Try adding city name.");
+      }
+    } catch {
+      toast.error("Place search failed. Check your network.");
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
 
   const handleLocateCurrentLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
@@ -94,6 +162,7 @@ export default function TimingAndLocationSettings({
           latitude: lat,
           longitude: lng,
         }));
+        reverseGeocode(lat, lng);
         setIsLocating(false);
         toast.success(`Current location detected: ${lat}, ${lng}`);
       },
@@ -122,6 +191,7 @@ export default function TimingAndLocationSettings({
   const executeSave = async () => {
     const payload = {
       ...formData,
+      physical_address: formData.physical_address,
       opening_time: `${formData.opening_time}:00`,
       closing_time: `${formData.closing_time}:00`,
       openingTime: `${formData.opening_time}:00`,
@@ -240,39 +310,39 @@ export default function TimingAndLocationSettings({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Latitude */}
-          <div className="space-y-1.5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Kitchen Place / Address Search & Display */}
+          <div className="lg:col-span-2 space-y-1.5">
             <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
-              <Compass size={13} className="text-brand-gold" />
-              <span>Store Latitude</span>
+              <MapPin size={13} className="text-brand-gold" />
+              <span>Kitchen Location / Place Address</span>
             </label>
-            <input
-              type="number"
-              step="any"
-              name="latitude"
-              value={formData.latitude}
-              onChange={handleChange}
-              placeholder="e.g. 9.936193"
-              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
-            />
-          </div>
-
-          {/* Longitude */}
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
-              <Compass size={13} className="text-brand-gold" />
-              <span>Store Longitude</span>
-            </label>
-            <input
-              type="number"
-              step="any"
-              name="longitude"
-              value={formData.longitude}
-              onChange={handleChange}
-              placeholder="e.g. 76.271312"
-              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="physical_address"
+                value={formData.physical_address}
+                onChange={handleChange}
+                placeholder="e.g. Empire Plaza, MG Road, Ernakulam"
+                className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              />
+              <button
+                type="button"
+                onClick={() => handleSearchPlace()}
+                disabled={isSearchingAddress}
+                className="px-4 py-3 bg-brand-green-dark hover:bg-brand-green-dark/90 text-brand-cream border border-brand-gold/50 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {isSearchingAddress ? (
+                  <Loader2 size={13} className="animate-spin text-brand-gold" />
+                ) : (
+                  <Search size={13} className="text-brand-gold" />
+                )}
+                <span>Search Place</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500">
+              Type your restaurant/kitchen place name or pick on the map below. Coordinates update automatically.
+            </p>
           </div>
 
           {/* Delivery Radius with Stepper & Input */}
@@ -320,6 +390,49 @@ export default function TimingAndLocationSettings({
             </div>
           </div>
         </div>
+
+        {/* Subtle GPS Coordinates Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-brand-gold/5 border border-brand-gold/20 rounded-2xl px-4 py-2.5 text-xs">
+          <div className="flex items-center gap-2 text-brand-green-dark font-medium">
+            <Compass size={14} className="text-brand-gold" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Kitchen GPS:</span>
+            <span className="font-mono text-xs font-bold text-brand-green-dark">{latNum.toFixed(6)}, {lngNum.toFixed(6)}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowManualCoords(!showManualCoords)}
+            className="text-[10px] font-black uppercase tracking-wider text-brand-gold hover:text-brand-green-dark transition-colors cursor-pointer"
+          >
+            {showManualCoords ? "Hide Manual Coordinates" : "Edit Raw Coordinates (Optional)"}
+          </button>
+        </div>
+
+        {showManualCoords && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-brand-cream/30 border border-brand-gold/30 rounded-2xl">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-brand-green-dark">Store Latitude</label>
+              <input
+                type="number"
+                step="any"
+                name="latitude"
+                value={formData.latitude}
+                onChange={handleChange}
+                className="w-full bg-white border border-brand-gold/30 rounded-xl px-3 py-2 text-xs font-bold font-mono outline-none focus:border-brand-gold"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-brand-green-dark">Store Longitude</label>
+              <input
+                type="number"
+                step="any"
+                name="longitude"
+                value={formData.longitude}
+                onChange={handleChange}
+                className="w-full bg-white border border-brand-gold/30 rounded-xl px-3 py-2 text-xs font-bold font-mono outline-none focus:border-brand-gold"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Quick Radius Presets & Range Slider */}
         <div className="bg-brand-cream/40 rounded-2xl p-4 border border-brand-gold/30 space-y-3">
@@ -390,11 +503,7 @@ export default function TimingAndLocationSettings({
             longitude={lngNum}
             radiusKm={currentRadius}
             onLocationChange={(lat, lng) => {
-              setFormData((prev) => ({
-                ...prev,
-                latitude: lat,
-                longitude: lng,
-              }));
+              handleLocationChangeFromMap(lat, lng);
             }}
             onRadiusChange={(radius) => {
               setRadiusValue(radius);
