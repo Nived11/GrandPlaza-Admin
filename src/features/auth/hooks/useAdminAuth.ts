@@ -25,6 +25,9 @@ export const useAdminAuth = () => {
         document.cookie = `user_role=${role}; path=/; max-age=2592000; SameSite=Lax`;
         localStorage.setItem("user_role", role);
         localStorage.setItem("username", username);
+        if (user) {
+          localStorage.setItem("admin_user_data", JSON.stringify(user));
+        }
       }
 
       // Dynamic Toast & Landing Destination based on Role
