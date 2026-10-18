@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { SiteSettings } from "../api/settingsApi";
 import {
@@ -16,6 +16,9 @@ import {
   IndianRupee,
   Calculator,
   Sparkles,
+  Plus,
+  Minus,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,12 +50,30 @@ export default function TimingAndLocationSettings({
     closing_time: settings.closing_time ? settings.closing_time.slice(0, 5) : "23:00",
     latitude: settings.latitude ?? 9.9312,
     longitude: settings.longitude ?? 76.2673,
-    delivery_radius: settings.delivery_radius || 10,
+    delivery_radius: Number(settings.delivery_radius ?? settings.deliveryRadius ?? 10) || 10,
     base_delivery_charge: settings.base_delivery_charge ?? settings.baseDeliveryCharge ?? 20,
     base_delivery_distance: settings.base_delivery_distance ?? settings.baseDeliveryDistance ?? 1.0,
     per_km_charge: settings.per_km_charge ?? settings.perKmCharge ?? 10,
     free_delivery_threshold: (settings.free_delivery_threshold ?? settings.freeDeliveryThreshold ?? "") as string | number,
   });
+
+  // Keep formData in sync when fresh settings are fetched
+  useEffect(() => {
+    if (settings) {
+      setFormData((prev) => ({
+        ...prev,
+        opening_time: settings.opening_time ? settings.opening_time.slice(0, 5) : prev.opening_time,
+        closing_time: settings.closing_time ? settings.closing_time.slice(0, 5) : prev.closing_time,
+        latitude: settings.latitude ?? prev.latitude,
+        longitude: settings.longitude ?? prev.longitude,
+        delivery_radius: Number(settings.delivery_radius ?? settings.deliveryRadius ?? prev.delivery_radius) || 10,
+        base_delivery_charge: settings.base_delivery_charge ?? settings.baseDeliveryCharge ?? prev.base_delivery_charge,
+        base_delivery_distance: settings.base_delivery_distance ?? settings.baseDeliveryDistance ?? prev.base_delivery_distance,
+        per_km_charge: settings.per_km_charge ?? settings.perKmCharge ?? prev.per_km_charge,
+        free_delivery_threshold: (settings.free_delivery_threshold ?? settings.freeDeliveryThreshold ?? prev.free_delivery_threshold) as string | number,
+      }));
+    }
+  }, [settings]);
 
   const [isLocating, setIsLocating] = useState(false);
 
@@ -93,15 +114,22 @@ export default function TimingAndLocationSettings({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSave({
+  const setRadiusValue = (val: number) => {
+    const clamped = Math.max(0.5, Math.min(100, Number(val.toFixed(1))));
+    setFormData((prev) => ({ ...prev, delivery_radius: clamped }));
+  };
+
+  const executeSave = async () => {
+    const payload = {
       ...formData,
       opening_time: `${formData.opening_time}:00`,
       closing_time: `${formData.closing_time}:00`,
+      openingTime: `${formData.opening_time}:00`,
+      closingTime: `${formData.closing_time}:00`,
       latitude: Number(formData.latitude),
       longitude: Number(formData.longitude),
       delivery_radius: Number(formData.delivery_radius),
+      deliveryRadius: Number(formData.delivery_radius),
       base_delivery_charge: Number(formData.base_delivery_charge),
       baseDeliveryCharge: Number(formData.base_delivery_charge),
       base_delivery_distance: Number(formData.base_delivery_distance),
@@ -116,12 +144,20 @@ export default function TimingAndLocationSettings({
         formData.free_delivery_threshold !== "" && formData.free_delivery_threshold !== null
           ? Number(formData.free_delivery_threshold)
           : null,
-    });
+    };
+    await onSave(payload);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeSave();
   };
 
   const latNum = Number(formData.latitude) || 9.9312;
   const lngNum = Number(formData.longitude) || 76.2673;
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lngNum - 0.025}%2C${latNum - 0.025}%2C${lngNum + 0.025}%2C${latNum + 0.025}&layer=mapnik&marker=${latNum}%2C${lngNum}`;
+  const currentRadius = Number(formData.delivery_radius) || 10;
+
+  const radiusPresets = [5, 10, 15, 20, 25, 30];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -173,11 +209,12 @@ export default function TimingAndLocationSettings({
       <div className="bg-white rounded-3xl border border-brand-gold/20 p-5 sm:p-7 shadow-sm space-y-6">
         <div className="border-b border-brand-gold/10 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-brand-green-dark">
-              GPS Coordinates & <span className="text-brand-gold">Delivery Radius</span>
+            <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-brand-green-dark flex items-center gap-2">
+              <Radar size={18} className="text-brand-gold" />
+              <span>GPS Coordinates & <span className="text-brand-gold">Delivery Radius</span></span>
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Set your kitchen coordinates and maximum allowable delivery zone radius.
+              Set kitchen GPS coordinates and strict service radius. Customers outside this zone cannot place orders.
             </p>
           </div>
 
@@ -187,7 +224,7 @@ export default function TimingAndLocationSettings({
             onClick={handleLocateCurrentLocation}
             disabled={isLocating}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-green-dark hover:bg-brand-green-dark/90 text-brand-cream border border-brand-gold text-xs font-black uppercase tracking-wider transition-all shadow-sm cursor-pointer disabled:opacity-50 shrink-0 self-start sm:self-auto"
-            title="Use current GPS location"
+            title="Detect kitchen GPS automatically"
           >
             {isLocating ? (
               <>
@@ -216,7 +253,7 @@ export default function TimingAndLocationSettings({
               name="latitude"
               value={formData.latitude}
               onChange={handleChange}
-              placeholder="e.g. 9.9312"
+              placeholder="e.g. 9.936193"
               className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
             />
           </div>
@@ -233,25 +270,99 @@ export default function TimingAndLocationSettings({
               name="longitude"
               value={formData.longitude}
               onChange={handleChange}
-              placeholder="e.g. 76.2673"
+              placeholder="e.g. 76.271312"
               className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
             />
           </div>
 
-          {/* Delivery Radius */}
+          {/* Delivery Radius with Stepper & Input */}
           <div className="space-y-1.5">
-            <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
-              <Radar size={13} className="text-brand-gold" />
-              <span>Service Radius (KM)</span>
+            <label className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+              <span className="flex items-center gap-1.5">
+                <Radar size={13} className="text-brand-gold" />
+                <span>Service Radius (KM)</span>
+              </span>
+              <span className="text-[11px] font-black text-brand-gold font-sans">
+                {currentRadius} KM
+              </span>
             </label>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRadiusValue(currentRadius - 1)}
+                className="w-10 h-10 rounded-xl bg-brand-gold/15 hover:bg-brand-gold text-brand-green-dark border border-brand-gold/30 flex items-center justify-center font-black transition-colors cursor-pointer shrink-0"
+                title="Decrease by 1 KM"
+              >
+                <Minus size={14} strokeWidth={3} />
+              </button>
+
+              <input
+                type="number"
+                step="0.5"
+                min="0.5"
+                max="100"
+                name="delivery_radius"
+                value={formData.delivery_radius}
+                onChange={(e) => setRadiusValue(parseFloat(e.target.value) || 0)}
+                placeholder="e.g. 15"
+                className="w-full text-center bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-2 py-2.5 text-sm font-black text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              />
+
+              <button
+                type="button"
+                onClick={() => setRadiusValue(currentRadius + 1)}
+                className="w-10 h-10 rounded-xl bg-brand-gold/15 hover:bg-brand-gold text-brand-green-dark border border-brand-gold/30 flex items-center justify-center font-black transition-colors cursor-pointer shrink-0"
+                title="Increase by 1 KM"
+              >
+                <Plus size={14} strokeWidth={3} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Radius Presets & Range Slider */}
+        <div className="bg-brand-cream/40 rounded-2xl p-4 border border-brand-gold/30 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-[11px] font-black uppercase tracking-wider text-brand-green-dark flex items-center gap-2">
+              <span>Quick Zone Presets:</span>
+              <span className="text-xs font-bold text-gray-500 font-sans font-normal">(Click to set radius)</span>
+            </span>
+
+            {/* Presets */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {radiusPresets.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRadiusValue(r)}
+                  className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider border transition-all cursor-pointer ${
+                    currentRadius === r
+                      ? "bg-brand-green-dark text-brand-gold border-brand-gold shadow-xs"
+                      : "bg-white text-gray-700 border-brand-gold/30 hover:border-brand-gold hover:bg-brand-gold/10"
+                  }`}
+                >
+                  {r} KM
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Range Slider */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] font-bold text-gray-500">
+              <span>1 KM (Neighborhood)</span>
+              <span className="font-black text-brand-green-dark">{currentRadius} KM Active</span>
+              <span>50 KM (Metro Zone)</span>
+            </div>
             <input
-              type="number"
+              type="range"
+              min="1"
+              max="50"
               step="0.5"
-              name="delivery_radius"
-              value={formData.delivery_radius}
-              onChange={handleChange}
-              placeholder="e.g. 12"
-              className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              value={currentRadius}
+              onChange={(e) => setRadiusValue(parseFloat(e.target.value) || 1)}
+              className="w-full accent-brand-gold cursor-pointer h-2 bg-brand-gold/20 rounded-lg appearance-none"
             />
           </div>
         </div>
@@ -277,7 +388,7 @@ export default function TimingAndLocationSettings({
           <StoreLocationMap
             latitude={latNum}
             longitude={lngNum}
-            radiusKm={Number(formData.delivery_radius) || 10}
+            radiusKm={currentRadius}
             onLocationChange={(lat, lng) => {
               setFormData((prev) => ({
                 ...prev,
@@ -286,12 +397,38 @@ export default function TimingAndLocationSettings({
               }));
             }}
             onRadiusChange={(radius) => {
-              setFormData((prev) => ({
-                ...prev,
-                delivery_radius: radius,
-              }));
+              setRadiusValue(radius);
             }}
           />
+        </div>
+
+        {/* Direct Section 2 Save Button */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-brand-gold/10 bg-brand-gold/5 p-4 rounded-2xl">
+          <div className="flex items-center gap-2 text-xs text-brand-green-dark">
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+            <span className="text-[11px] font-bold">
+              Only addresses within <strong>{currentRadius} KM</strong> of <strong>({latNum.toFixed(4)}, {lngNum.toFixed(4)})</strong> will be allowed to order.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={executeSave}
+            disabled={isSaving}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-brand-green-dark hover:bg-brand-green-dark/90 text-brand-cream border border-brand-gold text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 size={14} className="animate-spin text-brand-gold" />
+                <span>Saving Location & Radius...</span>
+              </>
+            ) : (
+              <>
+                <Save size={14} className="text-brand-gold" />
+                <span>Save GPS & Delivery Radius</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -419,7 +556,7 @@ export default function TimingAndLocationSettings({
           </div>
         </div>
 
-        {/* Action Button */}
+        {/* Bottom Full Save Action Button */}
         <div className="flex justify-end pt-4 border-t border-brand-gold/10">
           <button
             type="submit"
@@ -434,7 +571,7 @@ export default function TimingAndLocationSettings({
             ) : (
               <>
                 <Save size={15} className="text-brand-gold" />
-                <span>Save Timings, Location & Delivery Rates</span>
+                <span>Save All Timings, Location & Delivery Rates</span>
               </>
             )}
           </button>

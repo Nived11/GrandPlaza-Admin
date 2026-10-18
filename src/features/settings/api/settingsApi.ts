@@ -10,6 +10,7 @@ export interface SiteSettings {
   latitude: number | string;
   longitude: number | string;
   delivery_radius: number | string;
+  deliveryRadius?: number | string;
   base_delivery_charge?: number | string;
   base_delivery_distance?: number | string;
   per_km_charge?: number | string;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
@@ -12,6 +12,8 @@ import {
   MapPin,
   Radar,
   Info,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -365,16 +367,41 @@ export default function StoreLocationMap({
       >
         <div ref={mapContainerRef} className="w-full h-full" />
 
-        {/* Overlay Delivery Radius Indicator Badge */}
-        <div className="absolute bottom-3 left-3 z-[1000] bg-brand-green-dark/95 backdrop-blur-sm border border-brand-gold text-brand-cream px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-2 text-xs">
-          <Radar size={15} className="text-brand-gold animate-pulse shrink-0" />
+        {/* Overlay Delivery Radius Indicator Badge with Quick Stepper Controls */}
+        <div className="absolute bottom-3 left-3 z-[1000] bg-brand-green-dark/95 backdrop-blur-sm border border-brand-gold text-brand-cream px-3 py-2 rounded-xl shadow-lg flex items-center gap-3 text-xs">
+          <Radar size={16} className="text-brand-gold animate-pulse shrink-0" />
           <div>
-            <span className="text-[10px] uppercase font-bold text-brand-gold/80 block leading-tight">
+            <span className="text-[9px] uppercase font-bold text-brand-gold/80 block leading-tight">
               Delivery Zone
             </span>
-            <span className="font-black text-brand-cream font-sans">
+            <span className="font-black text-brand-cream font-sans text-xs sm:text-sm">
               {validRadius} KM Radius
             </span>
+          </div>
+
+          <div className="flex items-center gap-1 pl-2 border-l border-brand-gold/30">
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = Math.max(1, validRadius - 1);
+                onRadiusChange(nextVal);
+              }}
+              className="w-6 h-6 rounded-md bg-brand-green-light/80 hover:bg-brand-gold hover:text-brand-green-dark text-brand-gold border border-brand-gold/40 flex items-center justify-center transition-colors cursor-pointer"
+              title="Decrease radius by 1 KM"
+            >
+              <Minus size={12} strokeWidth={3} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const nextVal = validRadius + 1;
+                onRadiusChange(nextVal);
+              }}
+              className="w-6 h-6 rounded-md bg-brand-green-light/80 hover:bg-brand-gold hover:text-brand-green-dark text-brand-gold border border-brand-gold/40 flex items-center justify-center transition-colors cursor-pointer"
+              title="Increase radius by 1 KM"
+            >
+              <Plus size={12} strokeWidth={3} />
+            </button>
           </div>
         </div>
 
