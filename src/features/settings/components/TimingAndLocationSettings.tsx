@@ -84,30 +84,59 @@ export default function TimingAndLocationSettings({
 
   const [isLocating, setIsLocating] = useState(false);
 
-  const reverseGeocode = async (lat: number, lng: number) => {
+  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyD66hrWeWUL-NAzX7lezdHFH9z1M2DuDF8";
+    let detectedPlace = "";
+
+    // 1. Google Geocoding API (High accuracy)
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      const gRes = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
       );
-      const data = await res.json();
-      if (data && data.display_name) {
-        setFormData((prev) => ({
-          ...prev,
-          physical_address: data.display_name,
-        }));
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        if (gData.results && gData.results.length > 0) {
+          detectedPlace = gData.results[0].formatted_address.replace(/, India$/, "").trim();
+        }
       }
-    } catch (e) {
-      console.error("Reverse geocoding error:", e);
+    } catch (err) {
+      console.warn("Google reverse geocoding notice:", err);
     }
+
+    // 2. OpenStreetMap Nominatim Fallback
+    if (!detectedPlace) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.display_name) {
+            detectedPlace = data.display_name;
+          }
+        }
+      } catch (e) {
+        console.error("OSM Nominatim reverse geocoding notice:", e);
+      }
+    }
+
+    if (detectedPlace) {
+      setFormData((prev) => ({
+        ...prev,
+        physical_address: detectedPlace,
+      }));
+    }
+
+    return detectedPlace;
   };
 
-  const handleLocationChangeFromMap = (newLat: number, newLng: number) => {
+  const handleLocationChangeFromMap = async (newLat: number, newLng: number) => {
     setFormData((prev) => ({
       ...prev,
       latitude: newLat,
       longitude: newLng,
     }));
-    reverseGeocode(newLat, newLng);
+    await reverseGeocode(newLat, newLng);
   };
 
   const handleSearchPlace = async (e?: React.FormEvent) => {
@@ -118,7 +147,34 @@ export default function TimingAndLocationSettings({
       return;
     }
     setIsSearchingAddress(true);
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyD66hrWeWUL-NAzX7lezdHFH9z1M2DuDF8";
+
     try {
+      // 1. Try Google Geocoding Search first
+      const gRes = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}`
+      );
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        if (gData.results && gData.results.length > 0) {
+          const first = gData.results[0];
+          const newLat = Number(first.geometry.location.lat.toFixed(6));
+          const newLng = Number(first.geometry.location.lng.toFixed(6));
+          const placeName = first.formatted_address.replace(/, India$/, "").trim();
+
+          setFormData((prev) => ({
+            ...prev,
+            latitude: newLat,
+            longitude: newLng,
+            physical_address: placeName,
+          }));
+          setAddressSearchQuery("");
+          toast.success(`📍 Found Place: ${placeName.slice(0, 50)}...`);
+          return;
+        }
+      }
+
+      // 2. Fallback to Nominatim OSM Search
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
       );
@@ -134,12 +190,12 @@ export default function TimingAndLocationSettings({
           physical_address: first.display_name,
         }));
         setAddressSearchQuery("");
-        toast.success(`Found place: ${first.display_name.slice(0, 45)}...`);
+        toast.success(`📍 Found Place: ${first.display_name.slice(0, 50)}...`);
       } else {
-        toast.error("No locations found for this place. Try adding city name.");
+        toast.error("No locations found for this place. Try adding city name (e.g. Kozhikode, Kochi).");
       }
     } catch {
-      toast.error("Place search failed. Check your network.");
+      toast.error("Place search failed. Check your network connection.");
     } finally {
       setIsSearchingAddress(false);
     }
@@ -153,7 +209,7 @@ export default function TimingAndLocationSettings({
 
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const lat = Number(pos.coords.latitude.toFixed(6));
         const lng = Number(pos.coords.longitude.toFixed(6));
 
@@ -162,9 +218,15 @@ export default function TimingAndLocationSettings({
           latitude: lat,
           longitude: lng,
         }));
-        reverseGeocode(lat, lng);
+
+        const detected = await reverseGeocode(lat, lng);
         setIsLocating(false);
-        toast.success(`Current location detected: ${lat}, ${lng}`);
+
+        if (detected) {
+          toast.success(`📍 Detected Kitchen: ${detected.slice(0, 55)}...`);
+        } else {
+          toast.success(`Current GPS detected: ${lat}, ${lng}`);
+        }
       },
       (err) => {
         setIsLocating(false);
@@ -172,10 +234,10 @@ export default function TimingAndLocationSettings({
         let errorMsg = "Could not fetch current position.";
         if (err.code === 1) errorMsg = "Location access was denied. Please allow location permissions in your browser.";
         else if (err.code === 2) errorMsg = "Location position unavailable.";
-        else if (err.code === 3) errorMsg = "Location request timed out.";
+        else if (err.code === 3) errorMsg = "Location request timed out. Please try again.";
         toast.error(errorMsg);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
@@ -502,6 +564,7 @@ export default function TimingAndLocationSettings({
             latitude={latNum}
             longitude={lngNum}
             radiusKm={currentRadius}
+            placeName={formData.physical_address}
             onLocationChange={(lat, lng) => {
               handleLocationChangeFromMap(lat, lng);
             }}
@@ -511,20 +574,38 @@ export default function TimingAndLocationSettings({
           />
         </div>
 
-        {/* Direct Section 2 Save Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-brand-gold/10 bg-brand-gold/5 p-4 rounded-2xl">
-          <div className="flex items-center gap-2 text-xs text-brand-green-dark">
-            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-            <span className="text-[11px] font-bold">
-              Only addresses within <strong>{currentRadius} KM</strong> of <strong>({latNum.toFixed(4)}, {lngNum.toFixed(4)})</strong> will be allowed to order.
-            </span>
+        {/* 📍 Detected Kitchen Place & Delivery Zone Confirmation Card */}
+        <div className="bg-gradient-to-r from-brand-gold/15 via-white to-brand-green-dark/5 border border-brand-gold/40 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5 flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-brand-green-dark text-brand-gold flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+              <MapPin size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-brand-green-dark bg-brand-gold/25 px-2 py-0.5 rounded-md border border-brand-gold/40">
+                  📍 Active Kitchen Location
+                </span>
+                <span className="font-mono text-[11px] font-bold text-gray-500">
+                  ({latNum.toFixed(6)}, {lngNum.toFixed(6)})
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-black text-brand-green-dark mt-1 line-clamp-2 leading-snug">
+                {formData.physical_address || "Click 'Locate Current Position' or pick on map to detect address..."}
+              </p>
+              <p className="text-[11px] font-medium text-gray-600 mt-1 flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                <span>
+                  Delivery rule active: Customers within <strong className="text-brand-green-dark font-black">{currentRadius} KM</strong> of this place can order.
+                </span>
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={executeSave}
             disabled={isSaving}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-brand-green-dark hover:bg-brand-green-dark/90 text-brand-cream border border-brand-gold text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer disabled:opacity-50 shrink-0"
+            className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-green-dark hover:bg-brand-green-dark/90 text-brand-cream border border-brand-gold text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer disabled:opacity-50 shrink-0 self-stretch md:self-center"
           >
             {isSaving ? (
               <>

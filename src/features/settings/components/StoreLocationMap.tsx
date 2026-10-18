@@ -21,6 +21,7 @@ interface StoreLocationMapProps {
   latitude: number;
   longitude: number;
   radiusKm: number;
+  placeName?: string;
   onLocationChange: (lat: number, lng: number) => void;
   onRadiusChange: (radius: number) => void;
 }
@@ -29,6 +30,7 @@ export default function StoreLocationMap({
   latitude,
   longitude,
   radiusKm,
+  placeName,
   onLocationChange,
   onRadiusChange,
 }: StoreLocationMapProps) {
@@ -103,6 +105,18 @@ export default function StoreLocationMap({
     });
   };
 
+  const getPopupHtml = (lat: number, lng: number, name?: string) => {
+    return `<div style="font-family: sans-serif; padding: 4px; color: #015a41; max-width: 220px;">
+      <div style="font-size: 10px; font-weight: 900; text-transform: uppercase; color: #e7aa31; letter-spacing: 0.5px;">📍 Kitchen Location</div>
+      <div style="font-size: 12px; font-weight: 700; color: #015a41; margin-top: 3px; line-height: 1.35;">
+        ${name ? name : "Empire Plaza Kitchen"}
+      </div>
+      <div style="font-size: 10px; color: #666; margin-top: 4px; font-family: monospace;">
+        ${lat.toFixed(6)}, ${lng.toFixed(6)}
+      </div>
+    </div>`;
+  };
+
   // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
@@ -126,12 +140,7 @@ export default function StoreLocationMap({
       draggable: !isLockedRef.current,
     }).addTo(map);
 
-    marker.bindPopup(
-      `<div style="font-family: sans-serif; padding: 4px; font-weight: bold; color: #015a41;">
-        📍 Store Location<br/>
-        <span style="font-size: 11px; color: #666;">Lat: ${validLat.toFixed(4)}, Lng: ${validLng.toFixed(4)}</span>
-      </div>`
-    );
+    marker.bindPopup(getPopupHtml(validLat, validLng, placeName));
 
     // Add Service Radius Circle
     const circle = L.circle([validLat, validLng], {
@@ -202,7 +211,14 @@ export default function StoreLocationMap({
     circleRef.current.setRadius(validRadius * 1000);
   }, [validRadius]);
 
-  // Search Address handler via Nominatim OSM
+  // Sync popup content whenever placeName or coordinates change
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.setPopupContent(getPopupHtml(validLat, validLng, placeName));
+    }
+  }, [placeName, validLat, validLng]);
+
+  // Search Address handler via Google Geocode & Nominatim OSM
   const handleSearchAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLockedRef.current) {
@@ -212,7 +228,35 @@ export default function StoreLocationMap({
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyD66hrWeWUL-NAzX7lezdHFH9z1M2DuDF8";
+
     try {
+      // 1. Google Geocoding Search
+      const gRes = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+          searchQuery.trim()
+        )}&key=${apiKey}`
+      );
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        if (gData.results && gData.results.length > 0) {
+          const first = gData.results[0];
+          const newLat = Number(first.geometry.location.lat.toFixed(6));
+          const newLng = Number(first.geometry.location.lng.toFixed(6));
+
+          if (markerRef.current && circleRef.current && mapInstanceRef.current) {
+            markerRef.current.setLatLng([newLat, newLng]);
+            circleRef.current.setLatLng([newLat, newLng]);
+            mapInstanceRef.current.flyTo([newLat, newLng], 14);
+          }
+
+          onLocationChangeRef.current(newLat, newLng);
+          toast.success(`📍 Found: ${first.formatted_address.replace(/, India$/, "").slice(0, 45)}...`);
+          return;
+        }
+      }
+
+      // 2. OSM Nominatim fallback
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           searchQuery.trim()
@@ -232,9 +276,9 @@ export default function StoreLocationMap({
         }
 
         onLocationChangeRef.current(newLat, newLng);
-        toast.success(`Found: ${first.display_name.slice(0, 45)}...`);
+        toast.success(`📍 Found: ${first.display_name.slice(0, 45)}...`);
       } else {
-        toast.error("No locations found for this query. Try adding city name.");
+        toast.error("No locations found for this place. Try adding city name.");
       }
     } catch {
       toast.error("Address search failed. Please check network connection.");
@@ -264,20 +308,21 @@ export default function StoreLocationMap({
         if (markerRef.current && circleRef.current && mapInstanceRef.current) {
           markerRef.current.setLatLng([lat, lng]);
           circleRef.current.setLatLng([lat, lng]);
-          mapInstanceRef.current.flyTo([lat, lng], 13);
+          mapInstanceRef.current.flyTo([lat, lng], 14);
         }
 
         onLocationChangeRef.current(lat, lng);
         setIsLocating(false);
-        toast.success(`Current GPS applied: ${lat}, ${lng}`);
+        toast.success(`Current GPS detected: (${lat}, ${lng})`);
       },
       (err) => {
         setIsLocating(false);
         let errorMsg = "Could not fetch current GPS location.";
         if (err.code === 1) errorMsg = "Permission denied. Allow location access in browser.";
+        else if (err.code === 3) errorMsg = "GPS timed out. Please try again.";
         toast.error(errorMsg);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
