@@ -124,6 +124,9 @@ export function useSettings() {
         is_manually_open: nextState,
         is_open: nextState,
       }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("store-status-changed"));
+      }
       toast.success(
         nextState ? "Store manually opened!" : "Store manually marked closed!"
       );
