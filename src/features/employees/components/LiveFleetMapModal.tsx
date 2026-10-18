@@ -419,6 +419,7 @@ export default function LiveFleetMapModal({
       delivery_boy_id: number;
       latitude: number;
       longitude: number;
+      is_on_duty?: boolean;
     }) => {
       if (!data.delivery_boy_id || data.latitude == null || data.longitude == null) return;
 
@@ -437,6 +438,23 @@ export default function LiveFleetMapModal({
         [riderId]: newCoords,
       }));
 
+      // Update rider's status and coordinates in allRiders list in real-time
+      setAllRiders((prev) =>
+        prev.map((r) =>
+          r.id === riderId
+            ? {
+                ...r,
+                delivery_profile: {
+                  ...r.delivery_profile,
+                  is_on_duty: data.is_on_duty !== undefined ? Boolean(data.is_on_duty) : true,
+                  current_latitude: newCoords.lat,
+                  current_longitude: newCoords.lng,
+                },
+              }
+            : r
+        )
+      );
+
       // Smoothly animate existing marker
       const existingMarker = markersRef.current[riderId];
       if (existingMarker && oldCoords) {
@@ -452,10 +470,37 @@ export default function LiveFleetMapModal({
       }
     };
 
+    const handleDutyUpdate = (data: { delivery_boy_id: number; is_on_duty: boolean }) => {
+      const riderId = Number(data.delivery_boy_id);
+      setAllRiders((prev) =>
+        prev.map((r) =>
+          r.id === riderId
+            ? {
+                ...r,
+                delivery_profile: {
+                  ...r.delivery_profile,
+                  is_on_duty: Boolean(data.is_on_duty),
+                },
+              }
+            : r
+        )
+      );
+
+      // If duty went offline, remove their marker from map
+      if (!data.is_on_duty) {
+        if (markersRef.current[riderId]) {
+          markersRef.current[riderId].setMap(null);
+          delete markersRef.current[riderId];
+        }
+      }
+    };
+
     channel.bind("delivery-location-updated", handleLocationUpdate);
+    channel.bind("delivery-duty-updated", handleDutyUpdate);
 
     return () => {
       channel.unbind("delivery-location-updated", handleLocationUpdate);
+      channel.unbind("delivery-duty-updated", handleDutyUpdate);
     };
   }, [isOpen, liveRiders, selectedRiderId, animateMarkerGlide, updateRoutePolyline]);
 
@@ -487,6 +532,34 @@ export default function LiveFleetMapModal({
 
     return () => clearInterval(pollInterval);
   }, [isOpen]);
+
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  // Manual Refresh fleet status from server on demand
+  const handleManualRefresh = async () => {
+    setIsManualRefreshing(true);
+    try {
+      const res = await axiosInstance.get(`/accounts/admin/delivery-boys?_t=${Date.now()}`, {
+        headers: { "Cache-Control": "no-cache" }
+      });
+      if (Array.isArray(res.data)) {
+        setAllRiders(res.data);
+        const updatedCoords: { [key: number]: { lat: number; lng: number } } = {};
+        res.data.forEach((r: Rider) => {
+          const lat = r.delivery_profile?.current_latitude;
+          const lng = r.delivery_profile?.current_longitude;
+          if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
+            updatedCoords[r.id] = { lat: Number(lat), lng: Number(lng) };
+          }
+        });
+        setLiveRiders((prev) => ({ ...prev, ...updatedCoords }));
+      }
+    } catch (err) {
+      console.error("Manual refresh error:", err);
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   // Center on selected rider
   const handleSelectRider = (id: number) => {
@@ -568,6 +641,17 @@ export default function LiveFleetMapModal({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isManualRefreshing}
+              title="Refresh live fleet positions"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer"
+            >
+              <RefreshCw size={13} className={isManualRefreshing ? "animate-spin" : ""} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
             <button
               type="button"
               onClick={handleFitAll}
@@ -748,7 +832,7 @@ export default function LiveFleetMapModal({
                     </div>
 
                     <div className="shrink-0 text-right">
-                      {coords ? (
+                      {rider.delivery_profile?.is_on_duty && coords ? (
                         <div>
                           <span className="text-[9px] font-bold text-emerald-600 flex items-center justify-end gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -761,7 +845,9 @@ export default function LiveFleetMapModal({
                           )}
                         </div>
                       ) : (
-                        <span className="text-[9px] font-medium text-gray-400">Offline</span>
+                        <span className="text-[9px] font-medium text-gray-400">
+                          {rider.delivery_profile?.is_on_duty === false ? "Off Duty" : "Offline"}
+                        </span>
                       )}
                     </div>
                   </button>
