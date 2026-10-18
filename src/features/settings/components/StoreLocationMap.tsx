@@ -22,7 +22,7 @@ interface StoreLocationMapProps {
   longitude: number;
   radiusKm: number;
   placeName?: string;
-  onLocationChange: (lat: number, lng: number) => void;
+  onLocationChange: (lat: number, lng: number, placeName?: string) => void;
   onRadiusChange: (radius: number) => void;
 }
 
@@ -250,8 +250,9 @@ export default function StoreLocationMap({
             mapInstanceRef.current.flyTo([newLat, newLng], 14);
           }
 
-          onLocationChangeRef.current(newLat, newLng);
-          toast.success(`📍 Found: ${first.formatted_address.replace(/, India$/, "").slice(0, 45)}...`);
+          const placeClean = first.formatted_address.replace(/, India$/, "").trim();
+          onLocationChangeRef.current(newLat, newLng, placeClean);
+          toast.success(`📍 Found: ${placeClean.slice(0, 45)}...`);
           return;
         }
       }
@@ -275,7 +276,7 @@ export default function StoreLocationMap({
           mapInstanceRef.current.flyTo([newLat, newLng], 13);
         }
 
-        onLocationChangeRef.current(newLat, newLng);
+        onLocationChangeRef.current(newLat, newLng, first.display_name);
         toast.success(`📍 Found: ${first.display_name.slice(0, 45)}...`);
       } else {
         toast.error("No locations found for this place. Try adding city name.");
@@ -313,7 +314,7 @@ export default function StoreLocationMap({
 
         onLocationChangeRef.current(lat, lng);
         setIsLocating(false);
-        toast.success(`Current GPS detected: (${lat}, ${lng})`);
+        toast.info(`📍 Detected location: (${lat}, ${lng}). You can drag the pin or search to set your exact restaurant building.`);
       },
       (err) => {
         setIsLocating(false);
@@ -331,29 +332,34 @@ export default function StoreLocationMap({
       {/* Top Map Action Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         {/* Search Address Box */}
-        <form
-          onSubmit={handleSearchAddress}
-          className="relative flex-1 max-w-sm flex items-center"
-        >
-          <Search
-            size={15}
-            className="absolute left-3.5 text-brand-green-dark/60"
-          />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search address (e.g. Kakkanad, Kochi)..."
-            className="w-full bg-white border border-brand-gold/40 rounded-xl py-2 pl-10 pr-20 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold shadow-xs"
-          />
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="absolute right-1.5 px-2.5 py-1 rounded-lg bg-brand-green-dark text-brand-cream text-[10px] font-black uppercase tracking-wider hover:bg-brand-green-dark/90 transition-all cursor-pointer disabled:opacity-50"
+        <div className="flex-1 max-w-md space-y-1">
+          <form
+            onSubmit={handleSearchAddress}
+            className="relative flex items-center"
           >
-            {isSearching ? <Loader2 size={11} className="animate-spin" /> : "Find"}
-          </button>
-        </form>
+            <Search
+              size={15}
+              className="absolute left-3.5 text-brand-green-dark/60 pointer-events-none"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search restaurant place (e.g. Mavoor Road, Kozhikode)..."
+              className="w-full bg-white border border-brand-gold/40 rounded-xl py-2 pl-10 pr-20 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold shadow-xs"
+            />
+            <button
+              type="submit"
+              disabled={isSearching}
+              className="absolute right-1.5 px-3 py-1 rounded-lg bg-brand-green-dark text-brand-cream text-[10px] font-black uppercase tracking-wider hover:bg-brand-green-dark/90 transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSearching ? <Loader2 size={11} className="animate-spin" /> : "Find"}
+            </button>
+          </form>
+          <p className="text-[10px] text-gray-500 font-medium pl-1">
+            💡 On PCs/Laptops, type your restaurant location above or drag the map pin to your exact building.
+          </p>
+        </div>
 
         {/* Action Controls: Locate & Lock Map */}
         <div className="flex items-center gap-2 self-start sm:self-auto">

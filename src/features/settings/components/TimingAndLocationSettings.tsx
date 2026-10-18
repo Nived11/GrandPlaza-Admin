@@ -130,13 +130,16 @@ export default function TimingAndLocationSettings({
     return detectedPlace;
   };
 
-  const handleLocationChangeFromMap = async (newLat: number, newLng: number) => {
+  const handleLocationChangeFromMap = async (newLat: number, newLng: number, knownPlaceName?: string) => {
     setFormData((prev) => ({
       ...prev,
       latitude: newLat,
       longitude: newLng,
+      physical_address: knownPlaceName || prev.physical_address,
     }));
-    await reverseGeocode(newLat, newLng);
+    if (!knownPlaceName) {
+      await reverseGeocode(newLat, newLng);
+    }
   };
 
   const handleSearchPlace = async (e?: React.FormEvent) => {
@@ -385,7 +388,7 @@ export default function TimingAndLocationSettings({
                 name="physical_address"
                 value={formData.physical_address}
                 onChange={handleChange}
-                placeholder="e.g. Empire Plaza, MG Road, Ernakulam"
+                placeholder="e.g. Empire Plaza, Mavoor Road, Kozhikode"
                 className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
               />
               <button
@@ -565,8 +568,8 @@ export default function TimingAndLocationSettings({
             longitude={lngNum}
             radiusKm={currentRadius}
             placeName={formData.physical_address}
-            onLocationChange={(lat, lng) => {
-              handleLocationChangeFromMap(lat, lng);
+            onLocationChange={(lat, lng, place) => {
+              handleLocationChangeFromMap(lat, lng, place);
             }}
             onRadiusChange={(radius) => {
               setRadiusValue(radius);
