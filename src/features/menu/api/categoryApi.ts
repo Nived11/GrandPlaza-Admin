@@ -7,7 +7,7 @@ export interface CategoryPayload {
 
 // 🟢 Get Category List
 export const getCategoriesApi = async (search?: string) => {
-  const url = search ? `/menu/admin/categories?search=${search}` : "/menu/admin/categories/";
+  const url = search ? `/menu/admin/categories?search=${search}` : "/menu/admin/categories";
   const response = await axiosInstance.get(url);
   return response.data;
 };

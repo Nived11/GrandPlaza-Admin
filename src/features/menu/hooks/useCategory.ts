@@ -20,11 +20,15 @@ export function useCategory() {
   // Added optional search parameter based on your API docs
   const fetchCategories = async (search?: string) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await getCategoriesApi(search);
-      setCategoryList(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : data?.results || data?.data || [];
+      setCategoryList(list);
     } catch (err: any) {
       console.error("Error fetching category list:", err);
+      const msg = extractErrorMessages(err);
+      setError(msg);
     } finally {
       setLoading(false);
     }
