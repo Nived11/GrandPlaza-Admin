@@ -44,7 +44,9 @@ export interface FAQItem {
 
 // Site Settings APIs
 export const getSiteSettingsApi = async () => {
-  const response = await axiosInstance.get("/settings/site-settings");
+  const response = await axiosInstance.get(`/settings/site-settings?_t=${Date.now()}`, {
+    headers: { "Cache-Control": "no-cache" },
+  });
   return response.data;
 };
 

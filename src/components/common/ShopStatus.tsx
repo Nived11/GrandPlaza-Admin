@@ -28,10 +28,12 @@ export default function ShopStatus({ isCollapsed = false }: ShopStatusProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Fetch real store status from backend
+  // Fetch real store status from backend (always fresh for admin)
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await axiosInstance.get("/settings/site-settings");
+      const res = await axiosInstance.get(`/settings/site-settings?_t=${Date.now()}`, {
+        headers: { "Cache-Control": "no-cache" },
+      });
       if (res.data) {
         const d: SiteSettingsResponse = res.data;
         const manualOpen = d.is_manually_open ?? d.isManuallyOpen ?? true;
@@ -51,8 +53,16 @@ export default function ShopStatus({ isCollapsed = false }: ShopStatusProps) {
   useEffect(() => {
     fetchStatus();
 
-    // Listen for cross-component sync event
-    const handleStatusEvent = () => fetchStatus();
+    // Listen for cross-component sync event (e.g. from Settings page)
+    const handleStatusEvent = (e: Event) => {
+      // Don't re-fetch if this component triggered the toggle itself
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.origin === "ShopStatus") {
+        return;
+      }
+      fetchStatus();
+    };
+
     window.addEventListener("store-status-changed", handleStatusEvent);
     return () => {
       window.removeEventListener("store-status-changed", handleStatusEvent);
@@ -86,8 +96,12 @@ export default function ShopStatus({ isCollapsed = false }: ShopStatusProps) {
         toast.success("Store marked OPEN. Online ordering enabled.");
       }
 
-      // Notify other components (like Settings page)
-      window.dispatchEvent(new Event("store-status-changed"));
+      // Notify other components (like Settings page) with origin tag
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("store-status-changed", { detail: { origin: "ShopStatus" } })
+        );
+      }
     } catch (err: any) {
       console.error("Failed to update store status", err);
       toast.error(err?.response?.data?.detail || "Failed to update store status. Please try again.");

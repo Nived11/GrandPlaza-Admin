@@ -94,6 +94,23 @@ export function useSettings() {
   useEffect(() => {
     fetchSettings();
     fetchFaqs();
+
+    const handleStatusEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.origin === "useSettings") {
+        return;
+      }
+      fetchSettings();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("store-status-changed", handleStatusEvent);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("store-status-changed", handleStatusEvent);
+      }
+    };
   }, [fetchSettings, fetchFaqs]);
 
   // Save Settings
@@ -125,7 +142,9 @@ export function useSettings() {
         is_open: nextState,
       }));
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("store-status-changed"));
+        window.dispatchEvent(
+          new CustomEvent("store-status-changed", { detail: { origin: "useSettings" } })
+        );
       }
       toast.success(
         nextState ? "Store manually opened!" : "Store manually marked closed!"
