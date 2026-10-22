@@ -45,8 +45,8 @@ interface Props {
 // 🏢 Empire Plaza Main Kitchen (Kadavanthra, Kochi, Kerala)
 const RESTAURANT_LOCATION = { lat: 9.967625, lng: 76.304040 };
 
-// 🛵 Swiggy-Style Custom Scooter SVG Marker with Pulsing Radar
-function getSwiggyBikeSvg(isBusy: boolean, heading: number = 0): string {
+// 🛵 Real-time Fleet Partner SVG Marker with Pulsing Radar
+function getFleetBikeSvg(isBusy: boolean, heading: number = 0): string {
   const primaryColor = isBusy ? "#D97706" : "#059669"; // Amber if busy, Emerald if active
   const pulseColor = isBusy ? "rgba(217, 119, 6, 0.35)" : "rgba(16, 185, 129, 0.4)";
 
@@ -172,7 +172,7 @@ export default function LiveFleetMapModal({
     }
   }, [riders, initialSelectedRiderId]);
 
-  // Smoothly animate marker gliding to new coordinates (Swiggy movement interpolation)
+  // Smoothly animate marker gliding to new coordinates with easing
   const animateMarkerGlide = useCallback((
     marker: any,
     from: { lat: number; lng: number },
@@ -201,8 +201,14 @@ export default function LiveFleetMapModal({
     requestAnimationFrame(step);
   }, []);
 
-  // Update Route Polyline between Kitchen and selected Rider
-  const updateRoutePolyline = useCallback((riderCoords: { lat: number; lng: number } | null) => {
+  const [roadInfo, setRoadInfo] = useState<{ [key: number]: { distanceText: string; durationText: string } }>({});
+  const routingAbortRef = useRef<AbortController | null>(null);
+
+  // Update Route Polyline between Kitchen and selected Rider with actual road navigation path
+  const updateRoutePolyline = useCallback(async (
+    riderCoords: { lat: number; lng: number } | null,
+    riderId?: number | null
+  ) => {
     const map = mapInstanceRef.current;
     const google = (window as any).google;
     if (!map || !google?.maps) return;
@@ -215,20 +221,63 @@ export default function LiveFleetMapModal({
       return;
     }
 
-    const pathCoordinates = [
-      RESTAURANT_LOCATION,
-      riderCoords
-    ];
+    if (routingAbortRef.current) {
+      routingAbortRef.current.abort();
+    }
+    const abortController = new AbortController();
+    routingAbortRef.current = abortController;
+
+    let roadPath: { lat: number; lng: number }[] | null = null;
+    let distanceStr: string | null = null;
+    let durationStr: string | null = null;
+
+    try {
+      // Real-time Road Routing via OSRM Driving Engine
+      const res = await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${RESTAURANT_LOCATION.lng},${RESTAURANT_LOCATION.lat};${riderCoords.lng},${riderCoords.lat}?overview=full&geometries=geojson`,
+        { signal: abortController.signal }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          roadPath = route.geometry.coordinates.map((c: [number, number]) => ({
+            lat: c[1],
+            lng: c[0],
+          }));
+          const distKm = (route.distance / 1000).toFixed(1);
+          const durMin = Math.max(1, Math.round(route.duration / 60));
+          distanceStr = `${distKm} KM`;
+          durationStr = `${durMin} mins`;
+        }
+      }
+    } catch (e: any) {
+      if (e.name !== "AbortError") {
+        console.warn("Road routing fetch error:", e);
+      }
+    }
+
+    // Graceful fallback to straight line if offline or routing unavailable
+    if (!roadPath || roadPath.length === 0) {
+      roadPath = [RESTAURANT_LOCATION, riderCoords];
+    }
+
+    if (riderId && distanceStr) {
+      setRoadInfo((prev) => ({
+        ...prev,
+        [riderId]: { distanceText: distanceStr!, durationText: durationStr || "" },
+      }));
+    }
 
     if (polylineRef.current) {
-      polylineRef.current.setPath(pathCoordinates);
+      polylineRef.current.setPath(roadPath);
     } else {
       polylineRef.current = new google.maps.Polyline({
-        path: pathCoordinates,
+        path: roadPath,
         geodesic: true,
         strokeColor: "#059669",
-        strokeOpacity: 0.85,
-        strokeWeight: 4,
+        strokeOpacity: 0.9,
+        strokeWeight: 5,
         map,
       });
     }
@@ -310,7 +359,7 @@ export default function LiveFleetMapModal({
             map,
             title: `${name} (${rider.employee_id || `DB-${rider.id}`})`,
             icon: {
-              url: getSwiggyBikeSvg(isBusy, heading),
+              url: getFleetBikeSvg(isBusy, heading),
               scaledSize: new google.maps.Size(52, 60),
               anchor: new google.maps.Point(26, 48),
             },
@@ -321,7 +370,7 @@ export default function LiveFleetMapModal({
             setSelectedRiderId(rider.id);
             map.panTo(coords);
             map.setZoom(16);
-            updateRoutePolyline(coords);
+            updateRoutePolyline(coords, rider.id);
           });
 
           markersRef.current[rider.id] = marker;
@@ -338,7 +387,7 @@ export default function LiveFleetMapModal({
 
         // Draw initial polyline if rider selected
         if (targetRiderCoords) {
-          updateRoutePolyline(targetRiderCoords);
+          updateRoutePolyline(targetRiderCoords, selectedRiderId);
         }
       })
       .catch((err) => {
@@ -371,7 +420,7 @@ export default function LiveFleetMapModal({
       if (existingMarker) {
         // Marker exists: update icon and smoothly glide
         existingMarker.setIcon({
-          url: getSwiggyBikeSvg(isBusy, heading),
+          url: getFleetBikeSvg(isBusy, heading),
           scaledSize: new google.maps.Size(52, 60),
           anchor: new google.maps.Point(26, 48),
         });
@@ -382,7 +431,7 @@ export default function LiveFleetMapModal({
           map,
           title: `${name} (${rider.employee_id || `DB-${rider.id}`})`,
           icon: {
-            url: getSwiggyBikeSvg(isBusy, heading),
+            url: getFleetBikeSvg(isBusy, heading),
             scaledSize: new google.maps.Size(52, 60),
             anchor: new google.maps.Point(26, 48),
           },
@@ -393,7 +442,7 @@ export default function LiveFleetMapModal({
           setSelectedRiderId(rider.id);
           map.panTo(coords);
           map.setZoom(16);
-          updateRoutePolyline(coords);
+          updateRoutePolyline(coords, rider.id);
         });
 
         markersRef.current[rider.id] = newMarker;
@@ -402,7 +451,7 @@ export default function LiveFleetMapModal({
 
     // Update polyline for currently selected rider
     if (selectedRiderId && liveRiders[selectedRiderId]) {
-      updateRoutePolyline(liveRiders[selectedRiderId]);
+      updateRoutePolyline(liveRiders[selectedRiderId], selectedRiderId);
     }
   }, [liveRiders, allRiders, selectedRiderId, updateRoutePolyline]);
 
@@ -466,7 +515,7 @@ export default function LiveFleetMapModal({
       // If this rider is currently selected, smoothly pan the map
       if (selectedRiderId === riderId && mapInstanceRef.current) {
         mapInstanceRef.current.panTo(newCoords);
-        updateRoutePolyline(newCoords);
+        updateRoutePolyline(newCoords, riderId);
       }
     };
 
@@ -568,7 +617,7 @@ export default function LiveFleetMapModal({
     if (coords && mapInstanceRef.current) {
       mapInstanceRef.current.panTo(coords);
       mapInstanceRef.current.setZoom(16);
-      updateRoutePolyline(coords);
+      updateRoutePolyline(coords, id);
     } else {
       updateRoutePolyline(null);
     }
@@ -631,7 +680,7 @@ export default function LiveFleetMapModal({
                 </h3>
                 <span className="flex items-center gap-1.5 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Swiggy Live GPS
+                  Live GPS Active
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-white/70 font-medium">
@@ -727,11 +776,21 @@ export default function LiveFleetMapModal({
                     <p className="text-[11px] text-gray-600 font-medium mt-0.5">
                       Vehicle: <span className="font-bold text-gray-800">{selectedRider.delivery_profile?.vehicle_number || selectedRider.vehicle_number || "KL Registered"}</span>
                     </p>
-                    {distanceText && (
-                      <p className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
-                        <Compass size={11} className="text-emerald-600" /> {distanceText} from Kitchen
-                      </p>
-                    )}
+                    {(() => {
+                      const road = selectedRider ? roadInfo[selectedRider.id] : null;
+                      if (road?.distanceText) {
+                        return (
+                          <p className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
+                            <Compass size={11} className="text-emerald-600" /> {road.distanceText} ({road.durationText} via road) from Kitchen
+                          </p>
+                        );
+                      }
+                      return distanceText ? (
+                        <p className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
+                          <Compass size={11} className="text-emerald-600" /> {distanceText} from Kitchen
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
 
                   <span
