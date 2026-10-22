@@ -45,35 +45,85 @@ interface Props {
 // 🏢 Empire Plaza Main Kitchen (Kadavanthra, Kochi, Kerala)
 const RESTAURANT_LOCATION = { lat: 9.967625, lng: 76.304040 };
 
-// 🛵 Real-time Fleet Partner SVG Marker with Pulsing Radar
-function getFleetBikeSvg(isBusy: boolean, heading: number = 0): string {
-  const primaryColor = isBusy ? "#D97706" : "#059669"; // Amber if busy, Emerald if active
-  const pulseColor = isBusy ? "rgba(217, 119, 6, 0.35)" : "rgba(16, 185, 129, 0.4)";
+// 🛵 Real-time Fleet Partner Delivery Scooter SVG Marker
+function getFleetBikeSvg(isBusy: boolean): string {
+  const primaryColor = isBusy ? "#D97706" : "#059669";
+  const badgeText = isBusy ? "BUSY" : "LIVE";
+  const badgeBg = isBusy ? "#F59E0B" : "#10B981";
 
   const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="74" viewBox="0 0 64 74">
+  <svg xmlns="http://www.w3.org/2000/svg" width="60" height="72" viewBox="0 0 60 72">
     <defs>
-      <filter id="sw-shadow" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.35"/>
+      <filter id="pin-shadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="3.5" stdDeviation="3" flood-color="#000000" flood-opacity="0.38"/>
       </filter>
+      <linearGradient id="pin-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#0F3D2E"/>
+        <stop offset="100%" stop-color="#062319"/>
+      </linearGradient>
     </defs>
-    
-    <!-- Pulsing Radar Wave -->
-    <circle cx="32" cy="36" r="24" fill="${pulseColor}">
-      <animate attributeName="r" from="14" to="28" dur="1.4s" repeatCount="indefinite"/>
+
+    <!-- Pulsing Radar circle under needle tip -->
+    <circle cx="30" cy="64" r="7" fill="${primaryColor}" opacity="0.45">
+      <animate attributeName="r" from="3" to="12" dur="1.4s" repeatCount="indefinite"/>
       <animate attributeName="opacity" from="0.9" to="0" dur="1.4s" repeatCount="indefinite"/>
     </circle>
-    
-    <!-- Outer Glow Badge -->
-    <circle cx="32" cy="36" r="18" fill="${primaryColor}" stroke="#FFFFFF" stroke-width="3" filter="url(#sw-shadow)"/>
-    
-    <!-- Motorcycle / Scooter Icon rotated towards movement heading -->
-    <g transform="translate(32, 36) rotate(${heading}) translate(-10, -10)" fill="#FFFFFF">
-      <path d="M4 14a2 2 0 1 0 4 0 2 2 0 0 0-4 0zm8 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM7 11h6l2-4h-2l-1.5 3H8l-.5-1H11V8H6.5l-.8-1.6A1 1 0 0 0 4.8 6H2v1.5h2.2l2.3 4.5A2 2 0 0 0 7 13h5.5l-.5 1H6v1.5h6a1 1 0 0 0 1-.8l1.4-2.7h-7z"/>
+
+    <!-- Map Pin Teardrop Shape -->
+    <path d="M30 4 C16 4 6 14 6 28 C6 41 26 61 29 64.2 C29.5 64.8 30.5 64.8 31 64.2 C34 61 54 41 54 28 C54 14 44 4 30 4 Z"
+          fill="url(#pin-grad)"
+          stroke="#D4AF37"
+          stroke-width="2.2"
+          filter="url(#pin-shadow)"/>
+
+    <!-- High-Contrast Crisp White Inner Disc -->
+    <circle cx="30" cy="27" r="19" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="0.8"/>
+
+    <!-- Delivery Scooter & Rider Graphic -->
+    <g transform="translate(13.5, 13)">
+      <!-- Amber Delivery Thermal Bag/Box -->
+      <rect x="1" y="7" width="9" height="9" rx="1.5" fill="#D97706" stroke="#92400E" stroke-width="0.7"/>
+      <path d="M1 11.5 H10" stroke="#FDE68A" stroke-width="1"/>
+      <circle cx="5.5" cy="9.2" r="1" fill="#FFFFFF"/>
+
+      <!-- Rider Helmet -->
+      <circle cx="17" cy="4" r="4" fill="#0F3D2E" stroke="#D4AF37" stroke-width="0.8"/>
+      <path d="M19 3.5 C20 4.2 20.5 5.5 19.5 6.5 L17.5 6.5" stroke="#38BDF8" stroke-width="1" stroke-linecap="round" fill="none"/>
+
+      <!-- Rider Jacket & Arm -->
+      <path d="M13.5 8 C14.5 7 18 7 19.5 10.5 L16 14 L12 12.5 Z" fill="#0F3D2E"/>
+      <path d="M17 10 L23 11.5" stroke="#0F3D2E" stroke-width="1.8" stroke-linecap="round"/>
+
+      <!-- Handlebar & Mirror -->
+      <path d="M22 9 L24.5 9" stroke="#334155" stroke-width="1.2" stroke-linecap="round"/>
+
+      <!-- Scooter Windshield & Front Cowl -->
+      <path d="M22.5 10.5 L27 13 L25 16.5 L22 15 Z" fill="#059669"/>
+      <!-- Headlight Yellow Glow -->
+      <path d="M27 13.5 L28.8 14.2" stroke="#FACC15" stroke-width="1.8" stroke-linecap="round"/>
+
+      <!-- Scooter Body & Footboard -->
+      <path d="M10 14.5 L15 16 L22 16 L20 19.5 L10 18 Z" fill="#059669"/>
+      <path d="M9.5 17.5 L22.5 17.5" stroke="#047857" stroke-width="1.2" stroke-linecap="round"/>
+
+      <!-- Fenders -->
+      <path d="M3 18 C3 15 9.5 15 9.5 18" stroke="#059669" stroke-width="1.6" fill="none"/>
+      <path d="M20.5 18 C20.5 15 27 15 27 18" stroke="#059669" stroke-width="1.6" fill="none"/>
+
+      <!-- Rear Wheel (Black Tire + White Rim + Gold Hub) -->
+      <circle cx="6.5" cy="19.5" r="4.2" fill="#1E293B" stroke="#0F172A" stroke-width="1.2"/>
+      <circle cx="6.5" cy="19.5" r="2.2" fill="#E2E8F0"/>
+      <circle cx="6.5" cy="19.5" r="0.9" fill="#D4AF37"/>
+
+      <!-- Front Wheel (Black Tire + White Rim + Gold Hub) -->
+      <circle cx="23.5" cy="19.5" r="4.2" fill="#1E293B" stroke="#0F172A" stroke-width="1.2"/>
+      <circle cx="23.5" cy="19.5" r="2.2" fill="#E2E8F0"/>
+      <circle cx="23.5" cy="19.5" r="0.9" fill="#D4AF37"/>
     </g>
-    
-    <!-- Bottom Needle Indicator -->
-    <polygon points="27,53 37,53 32,60" fill="${primaryColor}"/>
+
+    <!-- Top Status Badge (LIVE / BUSY) -->
+    <rect x="18" y="1" width="24" height="8.5" rx="4.25" fill="${badgeBg}" stroke="#FFFFFF" stroke-width="0.8"/>
+    <text x="30" y="7" font-family="system-ui, -apple-system, sans-serif" font-size="6" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.5">${badgeText}</text>
   </svg>
   `;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.trim())}`;
@@ -359,9 +409,9 @@ export default function LiveFleetMapModal({
             map,
             title: `${name} (${rider.employee_id || `DB-${rider.id}`})`,
             icon: {
-              url: getFleetBikeSvg(isBusy, heading),
-              scaledSize: new google.maps.Size(52, 60),
-              anchor: new google.maps.Point(26, 48),
+              url: getFleetBikeSvg(isBusy),
+              scaledSize: new google.maps.Size(56, 68),
+              anchor: new google.maps.Point(28, 65),
             },
             zIndex: 900,
           });
@@ -420,9 +470,9 @@ export default function LiveFleetMapModal({
       if (existingMarker) {
         // Marker exists: update icon and smoothly glide
         existingMarker.setIcon({
-          url: getFleetBikeSvg(isBusy, heading),
-          scaledSize: new google.maps.Size(52, 60),
-          anchor: new google.maps.Point(26, 48),
+          url: getFleetBikeSvg(isBusy),
+          scaledSize: new google.maps.Size(56, 68),
+          anchor: new google.maps.Point(28, 65),
         });
       } else {
         // Create new marker
@@ -431,9 +481,9 @@ export default function LiveFleetMapModal({
           map,
           title: `${name} (${rider.employee_id || `DB-${rider.id}`})`,
           icon: {
-            url: getFleetBikeSvg(isBusy, heading),
-            scaledSize: new google.maps.Size(52, 60),
-            anchor: new google.maps.Point(26, 48),
+            url: getFleetBikeSvg(isBusy),
+            scaledSize: new google.maps.Size(56, 68),
+            anchor: new google.maps.Point(28, 65),
           },
           zIndex: 900,
         });
