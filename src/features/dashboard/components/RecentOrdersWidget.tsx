@@ -67,7 +67,7 @@ export default function RecentOrdersWidget({ orders }: RecentOrdersWidgetProps) 
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs">
       
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black">
             <ShoppingBag size={16} />
@@ -76,7 +76,7 @@ export default function RecentOrdersWidget({ orders }: RecentOrdersWidgetProps) 
             <h3 className="text-base font-black text-slate-900 tracking-tight">
               Recent Live Orders Feed
             </h3>
-            <p className="text-[11px] text-gray-500">
+            <p className="text-[11px] text-gray-500 font-medium">
               Latest transactions placed across customer apps
             </p>
           </div>
@@ -91,8 +91,8 @@ export default function RecentOrdersWidget({ orders }: RecentOrdersWidgetProps) 
         </Link>
       </div>
 
-      {/* Orders Table / Cards */}
-      <div className="mt-2 divide-y divide-gray-100">
+      {/* Orders Table / Cards with Clean Scroll */}
+      <div className="mt-2 divide-y divide-gray-100 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
         {orders.map((o) => (
           <div
             key={o.id}

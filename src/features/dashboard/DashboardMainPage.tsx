@@ -136,25 +136,29 @@ export default function DashboardMainPage() {
       </div>
 
       {/* 5. Food Analytics: Top Selling Dishes & Category Sales Share */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
         {/* Top Selling Food Items (Period vs All-Time Switcher) */}
-        <TopSellingDishes
-          items={data?.top_selling_items || []}
-          allTimeItems={data?.all_time_top_selling || []}
-          periodLabel={data?.period_label || 'Today'}
-        />
+        <div className="h-full">
+          <TopSellingDishes
+            items={data?.top_selling_items || []}
+            allTimeItems={data?.all_time_top_selling || []}
+            periodLabel={data?.period_label || 'Today'}
+          />
+        </div>
 
         {/* Category Sales Share */}
-        <CategoryDistributionCard
-          categories={data?.category_distribution || []}
-          periodLabel={data?.period_label || 'Today'}
-        />
+        <div className="h-full">
+          <CategoryDistributionCard
+            categories={data?.category_distribution || []}
+            periodLabel={data?.period_label || 'Today'}
+          />
+        </div>
       </div>
 
       {/* 6. Operations, Fleet Ride & Payment Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch">
         {/* Kitchen Rush Hours & Fulfillment Health */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <OperationsHealthCard
             metrics={data?.operations_metrics}
             livePipeline={data?.live_pipeline}
@@ -163,7 +167,7 @@ export default function DashboardMainPage() {
         </div>
 
         {/* 🏍️ Fleet & Delivery Boy Distance Tracking */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <FleetDistanceCard
             metrics={data?.fleet_distance}
             periodLabel={data?.period_label || 'Today'}
@@ -171,7 +175,7 @@ export default function DashboardMainPage() {
         </div>
 
         {/* Payment Methods (Online UPI vs COD) */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <PaymentBreakdownCard
             payment={data?.payment_breakdown}
             periodLabel={data?.period_label || 'Today'}

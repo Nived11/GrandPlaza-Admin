@@ -17,15 +17,15 @@ export default function PaymentBreakdownCard({ payment, periodLabel }: PaymentBr
   const codPercent = 100 - onlinePercent;
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs flex flex-col justify-between">
+    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs h-full flex flex-col justify-between space-y-4">
       
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+      <div className="flex items-center justify-between pb-3 border-b border-gray-100">
         <div>
-          <h3 className="text-base font-black text-slate-900 tracking-tight">
+          <h3 className="text-sm sm:text-base font-black text-slate-900 tracking-tight">
             Payment Methods
           </h3>
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-gray-500 font-medium">
             Prepaid vs Cash on Delivery in {periodLabel}
           </p>
         </div>
@@ -35,20 +35,20 @@ export default function PaymentBreakdownCard({ payment, periodLabel }: PaymentBr
       </div>
 
       {/* Comparison Visual Meter */}
-      <div className="my-4 space-y-3">
+      <div className="space-y-3 flex-1 flex flex-col justify-center">
         <div className="flex items-center justify-between text-xs font-bold">
-          <span className="text-emerald-700 flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+          <span className="text-emerald-700 flex items-center gap-1 text-[11px]">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
             Online Paid ({onlinePercent}%)
           </span>
-          <span className="text-amber-700 flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+          <span className="text-amber-700 flex items-center gap-1 text-[11px]">
+            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
             COD / Cash ({codPercent}%)
           </span>
         </div>
 
         {/* Dual Color Progress Bar */}
-        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden flex">
+        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
           <div
             className="bg-emerald-600 h-full transition-all duration-500"
             style={{ width: `${onlinePercent}%` }}
@@ -60,32 +60,32 @@ export default function PaymentBreakdownCard({ payment, periodLabel }: PaymentBr
         </div>
 
         {/* Two Columns: Online vs COD */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
           
           {/* Online Prepaid */}
           <div className="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-3 space-y-1">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-800">
-              <ShieldCheck size={13} className="text-emerald-600" />
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+              <ShieldCheck size={12} className="text-emerald-600" />
               <span>Online / UPI</span>
             </div>
-            <p className="text-base font-black text-slate-900">
+            <p className="text-sm sm:text-base font-black text-slate-900">
               ₹{onlineRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </p>
-            <span className="text-[10px] text-gray-500 font-semibold block">
+            <span className="text-[10px] text-gray-500 font-medium block">
               {payment?.online_paid_count ?? 0} orders paid
             </span>
           </div>
 
           {/* COD */}
           <div className="bg-amber-50/70 border border-amber-100 rounded-2xl p-3 space-y-1">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-800">
-              <Banknote size={13} className="text-amber-600" />
-              <span>Cash on Delivery</span>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+              <Banknote size={12} className="text-amber-600" />
+              <span>Cash Delivery</span>
             </div>
-            <p className="text-base font-black text-slate-900">
+            <p className="text-sm sm:text-base font-black text-slate-900">
               ₹{codRev.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </p>
-            <span className="text-[10px] text-gray-500 font-semibold block">
+            <span className="text-[10px] text-gray-500 font-medium block">
               {payment?.cod_count ?? 0} cash to collect
             </span>
           </div>
@@ -94,8 +94,8 @@ export default function PaymentBreakdownCard({ payment, periodLabel }: PaymentBr
       </div>
 
       {/* Safety Note */}
-      <div className="text-[11px] text-gray-400 border-t border-gray-100 pt-3 flex items-center justify-between">
-        <span>Delivery boy reconciles COD at end of shift</span>
+      <div className="text-[11px] text-gray-400 border-t border-gray-100 pt-2.5 flex items-center justify-between">
+        <span>Settled per shift</span>
         <span className="font-bold text-slate-700">100% Verified</span>
       </div>
 

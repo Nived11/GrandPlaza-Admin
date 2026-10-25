@@ -62,10 +62,10 @@ export default function TopSellingDishes({
   };
 
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs flex flex-col justify-between">
+    <div className="bg-white rounded-3xl p-5 sm:p-6 border border-gray-100 shadow-xs h-full flex flex-col justify-between">
       
       {/* 👑 Top Header & View Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center font-black shadow-xs shrink-0">
             <Flame size={19} className="text-orange-600" />
@@ -108,41 +108,41 @@ export default function TopSellingDishes({
             }`}
           >
             <Trophy size={13} />
-            <span>All-Time Bestsellers</span>
+            <span>All-Time</span>
           </button>
         </div>
       </div>
 
       {/* Info notice if period has 0 items and automatically showing all-time */}
       {!hasPeriodItems && selectedView === 'period' && (
-        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs text-amber-900 flex items-center justify-between">
-          <span className="font-medium">
+        <div className="my-2 bg-amber-50 border border-amber-200 rounded-2xl p-2.5 text-xs text-amber-900 flex items-center justify-between">
+          <span className="font-medium text-[11px]">
             No completed sales in {periodLabel} yet.
           </span>
           <button
             type="button"
             onClick={() => setSelectedView('allTime')}
-            className="font-bold underline text-amber-950 cursor-pointer"
+            className="font-bold underline text-amber-950 cursor-pointer text-[11px]"
           >
-            View All-Time Top Sellers ➔
+            View All-Time ➔
           </button>
         </div>
       )}
 
-      {/* 🍽️ Dishes Ranking List */}
+      {/* 🍽️ Dishes Ranking List with Clean Scroll Container */}
       {activeItems.length === 0 ? (
-        <div className="p-8 text-center text-gray-400 space-y-2">
+        <div className="py-12 text-center text-gray-400 space-y-2 flex-1 flex flex-col items-center justify-center">
           <ChefHat size={32} className="mx-auto text-gray-300" />
           <p className="text-xs font-medium">No dish sales recorded yet.</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100 mt-2 space-y-2 flex-grow">
+        <div className="divide-y divide-gray-100 my-2 flex-1 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
           {activeItems.map((item, idx) => {
             const isVeg = item.dietary === 'VEG';
             const percentage = Math.round((item.quantity_sold / maxQty) * 100);
 
             return (
-              <div key={idx} className="pt-3 pb-2 first:pt-2">
+              <div key={idx} className="py-2.5 first:pt-1">
                 <div className="flex items-center justify-between gap-3">
                   
                   {/* Left: Rank & Dish name */}
@@ -179,7 +179,7 @@ export default function TopSellingDishes({
                       ₹{item.revenue.toLocaleString('en-IN')}
                     </span>
                     <span className="text-[11px] font-black text-orange-600">
-                      {item.quantity_sold} {item.quantity_sold === 1 ? 'sold' : 'sold'}
+                      {item.quantity_sold} sold
                     </span>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ export default function TopSellingDishes({
 
       {/* Bottom Summary Pill */}
       {activeItems.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+        <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span className="flex items-center gap-1.5 font-bold text-slate-700">
             <TrendingUp size={14} className="text-emerald-600" />
             Top {activeItems.length} Dishes
