@@ -19,8 +19,20 @@ export async function verifyJwtRole(token: string): Promise<string | null> {
     const secretKey =
       process.env.JWT_SECRET_KEY ||
       process.env.DJANGO_SECRET_KEY ||
-      process.env.SECRET_KEY ||
-      'django-insecure-5t=7)&fav4_i&o!*ftlu^1#s$xx*fk1q4a!94r$&t+hn4pz=s2';
+      process.env.SECRET_KEY;
+
+    // Fail closed if no signing key is configured
+    if (!secretKey) {
+      return null;
+    }
+
+    // Validate algorithm and type in header
+    const headerBytes = base64UrlToUint8Array(headerB64);
+    const headerStr = new TextDecoder().decode(headerBytes as any);
+    const header = JSON.parse(headerStr);
+    if (header.alg !== 'HS256' || header.typ !== 'JWT') {
+      return null;
+    }
 
     const enc = new TextEncoder();
     const key = await crypto.subtle.importKey(
@@ -41,7 +53,8 @@ export async function verifyJwtRole(token: string): Promise<string | null> {
     const payloadStr = new TextDecoder().decode(payloadBytes as any);
     const payload = JSON.parse(payloadStr);
 
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
+    // Enforce required, finite expiry
+    if (!payload.exp || typeof payload.exp !== 'number' || Date.now() >= payload.exp * 1000) {
       return null;
     }
 
@@ -54,15 +67,15 @@ export async function verifyJwtRole(token: string): Promise<string | null> {
 // Backward-compatible fallback for non-crypto contexts
 export const decodeJwtRole = (token: string): string | null => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    const payload = JSON.parse(jsonPayload);
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payloadBytes = base64UrlToUint8Array(parts[1]);
+    const payloadStr = new TextDecoder().decode(payloadBytes as any);
+    const payload = JSON.parse(payloadStr);
+    if (!payload.exp || typeof payload.exp !== 'number' || Date.now() >= payload.exp * 1000) {
+      return null;
+    }
     return payload?.role ?? null;
   } catch {
     return null;
