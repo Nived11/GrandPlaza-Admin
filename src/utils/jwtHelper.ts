@@ -54,7 +54,7 @@ export async function verifyJwtRole(token: string): Promise<string | null> {
     const payload = JSON.parse(payloadStr);
 
     // Enforce required, finite expiry
-    if (!payload.exp || typeof payload.exp !== 'number' || Date.now() >= payload.exp * 1000) {
+    if (!payload.exp || typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || Date.now() >= payload.exp * 1000) {
       return null;
     }
 
