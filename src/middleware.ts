@@ -25,10 +25,7 @@ export function middleware(request: NextRequest) {
     userRole = decodeJwtRole(refreshToken);
   }
 
-  // Fallback if token decode fails
-  if (!userRole) {
-    userRole = request.cookies.get('user_role')?.value ?? null;
-  }
+  // F10 FIX: Strictly derive role from JWT token claims only. Do not trust unverified cookie fallbacks.
 
   const isStaffOrAdmin = userRole === 'admin' || userRole === 'employee';
 
