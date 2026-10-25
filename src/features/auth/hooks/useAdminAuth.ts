@@ -31,15 +31,20 @@ export const useAdminAuth = () => {
       }
 
       // Dynamic Toast & Landing Destination based on Role
+      const targetRoute = role === "admin" ? "/" : "/orders";
       if (role === "admin") {
         toast.success("Welcome back, Admin!");
-        router.push("/");
       } else {
         toast.success(`Welcome back, ${username}! (Kitchen Staff)`);
-        router.push("/orders");
       }
 
-      router.refresh();
+      // Hard navigation ensures browser commits HttpOnly cookies cleanly and purges stale route cache
+      if (typeof window !== "undefined") {
+        window.location.href = targetRoute;
+      } else {
+        router.push(targetRoute);
+        router.refresh();
+      }
     } catch (err: any) {
       const errorMessage = extractErrorMessages(err);
       setError(errorMessage);
