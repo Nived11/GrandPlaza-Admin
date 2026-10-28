@@ -12,7 +12,12 @@ import {
   RefreshCw, 
   Compass, 
   Store,
-  Layers
+  Layers,
+  List,
+  Map as MapIcon,
+  ChevronDown,
+  ChevronUp,
+  Search
 } from "lucide-react";
 import { loadGoogleMaps } from "@/lib/loadGoogleMaps";
 import { getPusherClient } from "@/lib/pusherClient";
@@ -32,7 +37,32 @@ interface Rider {
     is_busy?: boolean;
     current_latitude?: number | null;
     current_longitude?: number | null;
+    last_location_updated_at?: string | null;
+    is_gps_active?: boolean;
+    last_known_latitude?: number | null;
+    last_known_longitude?: number | null;
+    last_seen_seconds_ago?: number | null;
   };
+}
+
+// 🛡️ Verify if a delivery partner's GPS signal is fresh & actively online
+export function isRiderGpsActive(rider: Rider): boolean {
+  const profile = rider.delivery_profile;
+  if (!profile) return false;
+  if (!profile.is_on_duty) return false;
+  if (profile.current_latitude == null || profile.current_longitude == null) return false;
+  if (isNaN(Number(profile.current_latitude)) || isNaN(Number(profile.current_longitude))) return false;
+  if (profile.is_gps_active === false) return false;
+
+  // Staleness threshold: 150 seconds (2.5 minutes)
+  if (profile.last_location_updated_at) {
+    const ageMs = Date.now() - new Date(profile.last_location_updated_at).getTime();
+    if (ageMs > 150 * 1000) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 interface Props {
@@ -198,6 +228,10 @@ export default function LiveFleetMapModal({
   // Maintain local state of riders with live coordinates
   const [liveRiders, setLiveRiders] = useState<{ [key: number]: { lat: number; lng: number } }>({});
   const [allRiders, setAllRiders] = useState<Rider[]>(riders);
+  const [mobileTab, setMobileTab] = useState<"map" | "list">("map");
+  const [isCardCollapsed, setIsCardCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [fleetFilter, setFleetFilter] = useState<"all" | "live" | "offline">("all");
 
   // Sync initial rider coordinates from props
   useEffect(() => {
@@ -206,15 +240,17 @@ export default function LiveFleetMapModal({
     let firstLiveId: number | null = null;
 
     riders.forEach((r) => {
-      const lat = r.delivery_profile?.current_latitude;
-      const lng = r.delivery_profile?.current_longitude;
-      if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
-        coordsMap[r.id] = { lat: Number(lat), lng: Number(lng) };
+      if (isRiderGpsActive(r)) {
+        coordsMap[r.id] = {
+          lat: Number(r.delivery_profile!.current_latitude),
+          lng: Number(r.delivery_profile!.current_longitude),
+        };
         if (!firstLiveId) firstLiveId = r.id;
       }
     });
 
-    setLiveRiders((prev) => ({ ...coordsMap, ...prev }));
+    // Directly set active coordinates (do NOT keep stale riders via prev)
+    setLiveRiders(coordsMap);
 
     // Auto-select first live rider if none selected
     if (!selectedRiderId && (initialSelectedRiderId || firstLiveId)) {
@@ -458,6 +494,16 @@ export default function LiveFleetMapModal({
     const google = (window as any).google;
     if (!map || !google?.maps) return;
 
+    // 1. Remove markers for riders who are no longer active in liveRiders
+    Object.keys(markersRef.current).forEach((idStr) => {
+      const riderId = Number(idStr);
+      if (!liveRiders[riderId]) {
+        markersRef.current[riderId].setMap(null);
+        delete markersRef.current[riderId];
+      }
+    });
+
+    // 2. Add or update markers for live active riders
     allRiders.forEach((rider) => {
       const coords = liveRiders[rider.id];
       if (!coords) return;
@@ -502,6 +548,8 @@ export default function LiveFleetMapModal({
     // Update polyline for currently selected rider
     if (selectedRiderId && liveRiders[selectedRiderId]) {
       updateRoutePolyline(liveRiders[selectedRiderId], selectedRiderId);
+    } else {
+      updateRoutePolyline(null);
     }
   }, [liveRiders, allRiders, selectedRiderId, updateRoutePolyline]);
 
@@ -516,13 +564,54 @@ export default function LiveFleetMapModal({
 
     const handleLocationUpdate = (data: {
       delivery_boy_id: number;
-      latitude: number;
-      longitude: number;
+      latitude?: number | null;
+      longitude?: number | null;
       is_on_duty?: boolean;
+      is_busy?: boolean;
+      is_gps_active?: boolean;
+      last_seen?: string;
     }) => {
-      if (!data.delivery_boy_id || data.latitude == null || data.longitude == null) return;
-
+      if (!data.delivery_boy_id) return;
       const riderId = Number(data.delivery_boy_id);
+
+      // If location is lost, disabled, or coordinates are null:
+      if (data.latitude == null || data.longitude == null || data.is_gps_active === false) {
+        setLiveRiders((prev) => {
+          if (!prev[riderId]) return prev;
+          const next = { ...prev };
+          delete next[riderId];
+          return next;
+        });
+
+        setAllRiders((prev) =>
+          prev.map((r) =>
+            r.id === riderId
+              ? {
+                  ...r,
+                  delivery_profile: {
+                    ...r.delivery_profile,
+                    current_latitude: null,
+                    current_longitude: null,
+                    is_gps_active: false,
+                    is_on_duty: data.is_on_duty !== undefined ? Boolean(data.is_on_duty) : r.delivery_profile?.is_on_duty,
+                  },
+                }
+              : r
+          )
+        );
+
+        if (markersRef.current[riderId]) {
+          markersRef.current[riderId].setMap(null);
+          delete markersRef.current[riderId];
+        }
+
+        if (selectedRiderId === riderId) {
+          updateRoutePolyline(null, riderId);
+        }
+        return;
+      }
+
+      // Valid live coordinates received:
       const newCoords = { lat: Number(data.latitude), lng: Number(data.longitude) };
       const oldCoords = liveRiders[riderId];
 
@@ -546,8 +635,11 @@ export default function LiveFleetMapModal({
                 delivery_profile: {
                   ...r.delivery_profile,
                   is_on_duty: data.is_on_duty !== undefined ? Boolean(data.is_on_duty) : true,
+                  is_busy: data.is_busy !== undefined ? Boolean(data.is_busy) : r.delivery_profile?.is_busy,
                   current_latitude: newCoords.lat,
                   current_longitude: newCoords.lng,
+                  is_gps_active: true,
+                  last_location_updated_at: data.last_seen || new Date().toISOString(),
                 },
               }
             : r
@@ -569,6 +661,26 @@ export default function LiveFleetMapModal({
       }
     };
 
+    const handleLocationLost = (data: { delivery_boy_id: number }) => {
+      if (!data.delivery_boy_id) return;
+      const riderId = Number(data.delivery_boy_id);
+      setLiveRiders((prev) => {
+        if (!prev[riderId]) return prev;
+        const next = { ...prev };
+        delete next[riderId];
+        return next;
+      });
+
+      if (markersRef.current[riderId]) {
+        markersRef.current[riderId].setMap(null);
+        delete markersRef.current[riderId];
+      }
+
+      if (selectedRiderId === riderId) {
+        updateRoutePolyline(null, riderId);
+      }
+    };
+
     const handleDutyUpdate = (data: { delivery_boy_id: number; is_on_duty: boolean }) => {
       const riderId = Number(data.delivery_boy_id);
       setAllRiders((prev) =>
@@ -585,20 +697,33 @@ export default function LiveFleetMapModal({
         )
       );
 
-      // If duty went offline, remove their marker from map
+      // If duty went offline, remove their marker and coordinates from live tracking
       if (!data.is_on_duty) {
+        setLiveRiders((prev) => {
+          if (!prev[riderId]) return prev;
+          const next = { ...prev };
+          delete next[riderId];
+          return next;
+        });
+
         if (markersRef.current[riderId]) {
           markersRef.current[riderId].setMap(null);
           delete markersRef.current[riderId];
+        }
+
+        if (selectedRiderId === riderId) {
+          updateRoutePolyline(null, riderId);
         }
       }
     };
 
     channel.bind("delivery-location-updated", handleLocationUpdate);
+    channel.bind("delivery-location-lost", handleLocationLost);
     channel.bind("delivery-duty-updated", handleDutyUpdate);
 
     return () => {
       channel.unbind("delivery-location-updated", handleLocationUpdate);
+      channel.unbind("delivery-location-lost", handleLocationLost);
       channel.unbind("delivery-duty-updated", handleDutyUpdate);
     };
   }, [isOpen, liveRiders, selectedRiderId, animateMarkerGlide, updateRoutePolyline]);
@@ -614,15 +739,17 @@ export default function LiveFleetMapModal({
         });
         if (Array.isArray(res.data)) {
           setAllRiders(res.data);
-          const updatedCoords: { [key: number]: { lat: number; lng: number } } = {};
+          const freshCoords: { [key: number]: { lat: number; lng: number } } = {};
           res.data.forEach((r: Rider) => {
-            const lat = r.delivery_profile?.current_latitude;
-            const lng = r.delivery_profile?.current_longitude;
-            if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
-              updatedCoords[r.id] = { lat: Number(lat), lng: Number(lng) };
+            if (isRiderGpsActive(r)) {
+              freshCoords[r.id] = {
+                lat: Number(r.delivery_profile!.current_latitude),
+                lng: Number(r.delivery_profile!.current_longitude),
+              };
             }
           });
-          setLiveRiders((prev) => ({ ...prev, ...updatedCoords }));
+          // Replace directly with fresh coords (drops offline/disabled riders)
+          setLiveRiders(freshCoords);
         }
       } catch (err) {
         // Silently skip background poll error
@@ -643,15 +770,17 @@ export default function LiveFleetMapModal({
       });
       if (Array.isArray(res.data)) {
         setAllRiders(res.data);
-        const updatedCoords: { [key: number]: { lat: number; lng: number } } = {};
+        const freshCoords: { [key: number]: { lat: number; lng: number } } = {};
         res.data.forEach((r: Rider) => {
-          const lat = r.delivery_profile?.current_latitude;
-          const lng = r.delivery_profile?.current_longitude;
-          if (lat != null && lng != null && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
-            updatedCoords[r.id] = { lat: Number(lat), lng: Number(lng) };
+          if (isRiderGpsActive(r)) {
+            freshCoords[r.id] = {
+              lat: Number(r.delivery_profile!.current_latitude),
+              lng: Number(r.delivery_profile!.current_longitude),
+            };
           }
         });
-        setLiveRiders((prev) => ({ ...prev, ...updatedCoords }));
+        // Replace directly with fresh coords (drops offline/disabled riders)
+        setLiveRiders(freshCoords);
       }
     } catch (err) {
       console.error("Manual refresh error:", err);
@@ -663,6 +792,8 @@ export default function LiveFleetMapModal({
   // Center on selected rider
   const handleSelectRider = (id: number) => {
     setSelectedRiderId(id);
+    setIsCardCollapsed(false);
+    setMobileTab("map"); // On mobile, automatically show the map!
     const coords = liveRiders[id];
     if (coords && mapInstanceRef.current) {
       mapInstanceRef.current.panTo(coords);
@@ -713,39 +844,56 @@ export default function LiveFleetMapModal({
     distanceText = km < 1 ? `${Math.round(km * 1000)} meters` : `${km.toFixed(1)} KM`;
   }
 
+  // Filtered riders for search & status tabs
+  const filteredRiders = allRiders.filter((rider) => {
+    const name = [rider.first_name, rider.last_name].filter(Boolean).join(" ") || rider.username;
+    const empId = rider.employee_id || `DB-${rider.id}`;
+    const matchesSearch =
+      searchQuery.trim() === "" ||
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      empId.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    const isLive = Boolean(liveRiders[rider.id]);
+    if (fleetFilter === "live") return isLive;
+    if (fleetFilter === "offline") return !isLive;
+    return true;
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl h-[90vh] bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-5 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-5xl h-full sm:h-[90vh] bg-white rounded-none sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden border-0 sm:border border-gray-200">
         
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 bg-[var(--brand-green-dark)] text-white flex items-center justify-between shrink-0 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-amber-300 shadow-inner">
-              <Bike size={20} className="animate-pulse" />
+        <div className="px-3.5 sm:px-6 py-2.5 sm:py-3 bg-[var(--brand-green-dark)] text-white flex items-center justify-between shrink-0 shadow-md">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-amber-300 shadow-inner">
+              <Bike size={18} className="animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-black tracking-wide uppercase font-sans">
+                <h3 className="text-xs sm:text-base font-black tracking-wide uppercase font-sans">
                   Live Fleet Tracking Map
                 </h3>
                 <span className="flex items-center gap-1.5 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  Live GPS Active
+                  {Object.keys(liveRiders).length} Active Live
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-white/70 font-medium">
+              <p className="text-[9px] sm:text-xs text-white/70 font-medium hidden sm:block">
                 Real-time satellite tracking of active delivery partners
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={handleManualRefresh}
               disabled={isManualRefreshing}
               title="Refresh live fleet positions"
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer"
+              className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition cursor-pointer"
             >
               <RefreshCw size={13} className={isManualRefreshing ? "animate-spin" : ""} />
               <span className="hidden sm:inline">Refresh</span>
@@ -768,11 +916,52 @@ export default function LiveFleetMapModal({
           </div>
         </div>
 
+        {/* Mobile View Switcher (Map vs Fleet List) */}
+        <div className="sm:hidden flex items-center border-b border-gray-200 bg-gray-100 p-1.5 gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setMobileTab("map")}
+            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              mobileTab === "map"
+                ? "bg-[var(--brand-green-dark)] text-white shadow-xs"
+                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <MapIcon size={13} className={mobileTab === "map" ? "text-amber-300" : "text-gray-500"} />
+            <span>Map View</span>
+            {Object.keys(liveRiders).length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+            )}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setMobileTab("list")}
+            className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition cursor-pointer ${
+              mobileTab === "list"
+                ? "bg-[var(--brand-green-dark)] text-white shadow-xs"
+                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <List size={13} className={mobileTab === "list" ? "text-amber-300" : "text-gray-500"} />
+            <span>Fleet List ({allRiders.length})</span>
+            {Object.keys(liveRiders).length > 0 && (
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full ml-0.5">
+                {Object.keys(liveRiders).length} Live
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Content: Map + Side Rider List */}
-        <div className="flex-1 flex flex-col sm:flex-row min-h-0">
+        <div className="flex-1 flex flex-col sm:flex-row min-h-0 relative">
           
           {/* Map Area */}
-          <div className="relative flex-1 h-3/5 sm:h-full bg-stone-100 overflow-hidden">
+          <div
+            className={`relative flex-1 bg-stone-100 overflow-hidden ${
+              mobileTab === "list" ? "hidden sm:flex sm:flex-col" : "flex flex-col h-full"
+            }`}
+          >
             {isLoading && (
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-stone-100/90 gap-2">
                 <Loader2 size={28} className="animate-spin text-[var(--brand-green-dark)]" />
@@ -790,11 +979,11 @@ export default function LiveFleetMapModal({
             <div ref={mapContainerRef} className="w-full h-full" />
 
             {/* Floating Map Quick Controls */}
-            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+            <div className="absolute top-2.5 left-2.5 z-10 flex flex-wrap gap-1.5">
               <button
                 type="button"
                 onClick={handleCenterRestaurant}
-                className="bg-white/95 backdrop-blur-md hover:bg-white text-[var(--brand-green-dark)] border border-gray-200 px-3 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition cursor-pointer"
+                className="bg-white/95 backdrop-blur-md hover:bg-white text-[var(--brand-green-dark)] border border-gray-200 px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Store size={13} className="text-amber-600" /> Empire Plaza Kitchen
               </button>
@@ -803,16 +992,55 @@ export default function LiveFleetMapModal({
                 <button
                   type="button"
                   onClick={() => selectedRiderId && handleSelectRider(selectedRiderId)}
-                  className="bg-white/95 backdrop-blur-md hover:bg-white text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition cursor-pointer"
+                  className="bg-white/95 backdrop-blur-md hover:bg-white text-emerald-700 border border-emerald-200 px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <Navigation size={13} className="text-emerald-600" /> Locate Rider
                 </button>
               )}
+
+              {/* Mobile shortcut to switch to list */}
+              <button
+                type="button"
+                onClick={() => setMobileTab("list")}
+                className="sm:hidden bg-white/95 backdrop-blur-md hover:bg-white text-gray-700 border border-gray-200 px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <List size={13} className="text-[var(--brand-green-dark)]" /> Fleet ({allRiders.length})
+              </button>
             </div>
 
-            {/* Selected Rider Floating Card on Map */}
-            {selectedRider && (
-              <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-sm z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 p-3.5 shadow-2xl flex flex-col gap-2">
+            {/* Selected Rider Minimized Bottom Pill */}
+            {selectedRider && isCardCollapsed && (
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto sm:max-w-sm z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 px-3 py-2 shadow-2xl flex items-center justify-between gap-2 animate-in slide-in-from-bottom duration-150">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[9px] font-mono font-black bg-[var(--brand-green-dark)] text-amber-300 px-1.5 py-0.5 rounded shadow-xs shrink-0">
+                    {selectedRider.employee_id || `DB-${selectedRider.id}`}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-gray-900 truncate">
+                      {[selectedRider.first_name, selectedRider.last_name].filter(Boolean).join(" ") || selectedRider.username}
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-medium truncate">
+                      {selectedCoords ? `${roadInfo[selectedRider.id]?.distanceText || distanceText} away` : "GPS Inactive"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsCardCollapsed(false)}
+                    className="py-1 px-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-[10px] flex items-center gap-1 cursor-pointer transition"
+                    title="Show Details"
+                  >
+                    <ChevronUp size={13} /> Details
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Selected Rider Full Floating Card on Map */}
+            {selectedRider && !isCardCollapsed && (
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto sm:max-w-sm z-10 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200 p-3 shadow-2xl flex flex-col gap-2 max-h-[45vh] overflow-y-auto animate-in slide-in-from-bottom duration-150">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -823,7 +1051,7 @@ export default function LiveFleetMapModal({
                         {[selectedRider.first_name, selectedRider.last_name].filter(Boolean).join(" ") || selectedRider.username}
                       </h4>
                     </div>
-                    <p className="text-[11px] text-gray-600 font-medium mt-0.5">
+                    <p className="text-[10px] sm:text-[11px] text-gray-600 font-medium mt-0.5">
                       Vehicle: <span className="font-bold text-gray-800">{selectedRider.delivery_profile?.vehicle_number || selectedRider.vehicle_number || "KL Registered"}</span>
                     </p>
                     {(() => {
@@ -843,22 +1071,35 @@ export default function LiveFleetMapModal({
                     })()}
                   </div>
 
-                  <span
-                    className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
-                      selectedCoords
-                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                        : "bg-amber-100 text-amber-800 border border-amber-300"
-                    }`}
-                  >
-                    {selectedCoords ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        GPS Live
-                      </>
-                    ) : (
-                      "No Signal"
-                    )}
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span
+                      className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1 ${
+                        selectedCoords
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-amber-100 text-amber-800 border border-amber-300"
+                      }`}
+                    >
+                      {selectedCoords ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          GPS Live
+                        </>
+                      ) : selectedRider.delivery_profile?.is_on_duty ? (
+                        "GPS Inactive"
+                      ) : (
+                        "Off Duty"
+                      )}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCardCollapsed(true)}
+                      className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer transition"
+                      title="Minimize Card"
+                    >
+                      <ChevronDown size={15} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 pt-1 border-t border-gray-100">
@@ -887,81 +1128,141 @@ export default function LiveFleetMapModal({
           </div>
 
           {/* Side Rider Fleet List */}
-          <div className="w-full sm:w-80 sm:border-l border-t sm:border-t-0 border-gray-200 bg-gray-50 flex flex-col shrink-0">
-            <div className="p-3 border-b border-gray-200 flex items-center justify-between bg-white">
-              <span className="text-[11px] font-black uppercase tracking-wider text-gray-700">
-                Riders Fleet ({allRiders.length})
-              </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {Object.keys(liveRiders).length} with GPS
-              </span>
+          <div
+            className={`w-full sm:w-80 sm:border-l border-t sm:border-t-0 border-gray-200 bg-gray-50 flex flex-col shrink-0 ${
+              mobileTab === "map" ? "hidden sm:flex" : "flex flex-1 h-full"
+            }`}
+          >
+            <div className="p-3 border-b border-gray-200 bg-white flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-black uppercase tracking-wider text-gray-700">
+                  Riders Fleet ({allRiders.length})
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  {Object.keys(liveRiders).length} Live GPS
+                </span>
+              </div>
+
+              {/* Quick Search */}
+              <div className="relative">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search rider name or DB ID..."
+                  className="w-full pl-8 pr-3 py-1 text-xs bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[var(--brand-green-dark)] focus:bg-white transition"
+                />
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1 text-[10px] font-bold pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setFleetFilter("all")}
+                  className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                    fleetFilter === "all" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  All ({allRiders.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFleetFilter("live")}
+                  className={`px-2 py-0.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                    fleetFilter === "live" ? "bg-emerald-700 text-white" : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live ({Object.keys(liveRiders).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFleetFilter("offline")}
+                  className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                    fleetFilter === "offline" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  Inactive ({allRiders.length - Object.keys(liveRiders).length})
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-              {allRiders.map((rider) => {
-                const isSelected = rider.id === selectedRiderId;
-                const coords = liveRiders[rider.id];
-                const name = [rider.first_name, rider.last_name].filter(Boolean).join(" ") || rider.username;
+              {filteredRiders.length === 0 ? (
+                <div className="p-6 text-center text-xs text-gray-500 font-medium">
+                  No riders matching your search or filter.
+                </div>
+              ) : (
+                filteredRiders.map((rider) => {
+                  const isSelected = rider.id === selectedRiderId;
+                  const coords = liveRiders[rider.id];
+                  const name = [rider.first_name, rider.last_name].filter(Boolean).join(" ") || rider.username;
 
-                let riderDist = "";
-                if (coords) {
-                  const d = calculateDistanceKm(RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng, coords.lat, coords.lng);
-                  riderDist = d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
-                }
+                  let riderDist = "";
+                  if (coords) {
+                    const d = calculateDistanceKm(RESTAURANT_LOCATION.lat, RESTAURANT_LOCATION.lng, coords.lat, coords.lng);
+                    riderDist = d < 1 ? `${Math.round(d * 1000)}m` : `${d.toFixed(1)}km`;
+                  }
 
-                return (
-                  <button
-                    key={rider.id}
-                    type="button"
-                    onClick={() => handleSelectRider(rider.id)}
-                    className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                      isSelected
-                        ? "bg-white border-[var(--brand-green-dark)] shadow-sm ring-1 ring-[var(--brand-green-dark)]/20"
-                        : "bg-white border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                          coords
-                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs"
-                            : "bg-gray-100 text-gray-400"
-                        }`}
-                      >
-                        <Bike size={16} />
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-black text-gray-900 truncate">{name}</p>
-                        <p className="text-[10px] text-gray-500 font-mono">
-                          {rider.employee_id || `DB-${rider.id}`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      {rider.delivery_profile?.is_on_duty && coords ? (
-                        <div>
-                          <span className="text-[9px] font-bold text-emerald-600 flex items-center justify-end gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                            Live
-                          </span>
-                          {riderDist && (
-                            <span className="text-[9px] text-gray-500 font-mono block">
-                              {riderDist} away
-                            </span>
-                          )}
+                  return (
+                    <button
+                      key={rider.id}
+                      type="button"
+                      onClick={() => handleSelectRider(rider.id)}
+                      className={`w-full text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                        isSelected
+                          ? "bg-white border-[var(--brand-green-dark)] shadow-sm ring-1 ring-[var(--brand-green-dark)]/20"
+                          : "bg-white border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                            coords
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs"
+                              : "bg-gray-100 text-gray-400"
+                          }`}
+                        >
+                          <Bike size={16} />
                         </div>
-                      ) : (
-                        <span className="text-[9px] font-medium text-gray-400">
-                          {rider.delivery_profile?.is_on_duty === false ? "Off Duty" : "Offline"}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-black text-gray-900 truncate">{name}</p>
+                          <p className="text-[10px] text-gray-500 font-mono">
+                            {rider.employee_id || `DB-${rider.id}`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        {coords ? (
+                          <div>
+                            <span className="text-[9px] font-bold text-emerald-600 flex items-center justify-end gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                              Live
+                            </span>
+                            {riderDist && (
+                              <span className="text-[9px] text-gray-500 font-mono block">
+                                {riderDist} away
+                              </span>
+                            )}
+                          </div>
+                        ) : rider.delivery_profile?.is_on_duty ? (
+                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                            GPS Inactive
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium text-gray-400">
+                            Off Duty
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
