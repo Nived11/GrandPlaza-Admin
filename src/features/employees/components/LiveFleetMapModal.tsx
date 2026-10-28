@@ -42,6 +42,7 @@ interface Rider {
     last_known_latitude?: number | null;
     last_known_longitude?: number | null;
     last_seen_seconds_ago?: number | null;
+    gps_accuracy?: number | null;
   };
 }
 
@@ -218,6 +219,7 @@ export default function LiveFleetMapModal({
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<{ [key: number]: any }>({});
   const headingsRef = useRef<{ [key: number]: number }>({});
+  const accuraciesRef = useRef<{ [key: number]: number }>({});
   const polylineRef = useRef<any>(null);
   const restaurantMarkerRef = useRef<any>(null);
 
@@ -240,6 +242,9 @@ export default function LiveFleetMapModal({
     let firstLiveId: number | null = null;
 
     riders.forEach((r) => {
+      if (r.delivery_profile?.gps_accuracy != null) {
+        accuraciesRef.current[r.id] = Number(r.delivery_profile.gps_accuracy);
+      }
       if (isRiderGpsActive(r)) {
         coordsMap[r.id] = {
           lat: Number(r.delivery_profile!.current_latitude),
@@ -566,6 +571,7 @@ export default function LiveFleetMapModal({
       delivery_boy_id: number;
       latitude?: number | null;
       longitude?: number | null;
+      accuracy?: number | null;
       is_on_duty?: boolean;
       is_busy?: boolean;
       is_gps_active?: boolean;
@@ -576,6 +582,7 @@ export default function LiveFleetMapModal({
 
       // If location is lost, disabled, or coordinates are null:
       if (data.latitude == null || data.longitude == null || data.is_gps_active === false) {
+        delete accuraciesRef.current[riderId];
         setLiveRiders((prev) => {
           if (!prev[riderId]) return prev;
           const next = { ...prev };
@@ -612,6 +619,10 @@ export default function LiveFleetMapModal({
       }
 
       // Valid live coordinates received:
+      if (data.accuracy != null) {
+        accuraciesRef.current[riderId] = Number(data.accuracy);
+      }
+
       const newCoords = { lat: Number(data.latitude), lng: Number(data.longitude) };
       const oldCoords = liveRiders[riderId];
 
@@ -741,6 +752,9 @@ export default function LiveFleetMapModal({
           setAllRiders(res.data);
           const freshCoords: { [key: number]: { lat: number; lng: number } } = {};
           res.data.forEach((r: Rider) => {
+            if (r.delivery_profile?.gps_accuracy != null) {
+              accuraciesRef.current[r.id] = Number(r.delivery_profile.gps_accuracy);
+            }
             if (isRiderGpsActive(r)) {
               freshCoords[r.id] = {
                 lat: Number(r.delivery_profile!.current_latitude),
@@ -772,6 +786,9 @@ export default function LiveFleetMapModal({
         setAllRiders(res.data);
         const freshCoords: { [key: number]: { lat: number; lng: number } } = {};
         res.data.forEach((r: Rider) => {
+          if (r.delivery_profile?.gps_accuracy != null) {
+            accuraciesRef.current[r.id] = Number(r.delivery_profile.gps_accuracy);
+          }
           if (isRiderGpsActive(r)) {
             freshCoords[r.id] = {
               lat: Number(r.delivery_profile!.current_latitude),
@@ -1069,6 +1086,11 @@ export default function LiveFleetMapModal({
                         </p>
                       ) : null;
                     })()}
+                    {selectedCoords && accuraciesRef.current[selectedRider.id] && accuraciesRef.current[selectedRider.id] > 50 && (
+                      <p className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 font-medium inline-block">
+                        📡 Satellite lock weak (±{Math.round(accuraciesRef.current[selectedRider.id])}m). Moving outdoors gives pinpoint accuracy.
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
@@ -1082,7 +1104,7 @@ export default function LiveFleetMapModal({
                       {selectedCoords ? (
                         <>
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          GPS Live
+                          GPS Live {accuraciesRef.current[selectedRider.id] ? `(±${Math.round(accuraciesRef.current[selectedRider.id])}m)` : ""}
                         </>
                       ) : selectedRider.delivery_profile?.is_on_duty ? (
                         "GPS Inactive"
@@ -1241,7 +1263,7 @@ export default function LiveFleetMapModal({
                           <div>
                             <span className="text-[9px] font-bold text-emerald-600 flex items-center justify-end gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                              Live
+                              Live {accuraciesRef.current[rider.id] ? `±${Math.round(accuraciesRef.current[rider.id])}m` : ""}
                             </span>
                             {riderDist && (
                               <span className="text-[9px] text-gray-500 font-mono block">
