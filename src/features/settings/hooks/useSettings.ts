@@ -114,12 +114,14 @@ export function useSettings() {
   }, [fetchSettings, fetchFaqs]);
 
   // Save Settings
-  const saveSettings = async (dataToSave: Partial<SiteSettings>) => {
+  const saveSettings = async (dataToSave: Partial<SiteSettings> | FormData) => {
     setSaving(true);
     try {
       const updated = await updateSiteSettingsApi(dataToSave);
       toast.success("Settings updated successfully!");
-      setSettings((prev) => ({ ...prev, ...updated }));
+      if (updated) {
+        setSettings((prev) => ({ ...prev, ...updated }));
+      }
       return true;
     } catch (err: any) {
       console.error("Error saving settings:", err);

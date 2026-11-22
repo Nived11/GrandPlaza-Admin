@@ -16,11 +16,15 @@ import {
   Flame,
   Sparkles,
   Tag,
+  Image as ImageIcon,
+  Upload,
+  X,
+  CheckCircle2,
 } from "lucide-react";
 
 interface GeneralSettingsFormProps {
   settings: SiteSettings;
-  onSave: (data: Partial<SiteSettings>) => Promise<boolean>;
+  onSave: (data: Partial<SiteSettings> | FormData) => Promise<boolean>;
   isSaving: boolean;
 }
 
@@ -44,15 +48,52 @@ export default function GeneralSettingsForm({
     is_offer_card_active: Boolean(settings.is_offer_card_active ?? settings.isOfferCardActive ?? true),
   });
 
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    settings.offer_banner_image ?? settings.offerBannerImage ?? null
+  );
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImageFile(file);
+      const objUrl = URL.createObjectURL(file);
+      setPreviewUrl(objUrl);
+    }
+  };
+
+  const handleResetImage = () => {
+    setSelectedImageFile(null);
+    setPreviewUrl(settings.offer_banner_image ?? settings.offerBannerImage ?? null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave(formData);
+    if (selectedImageFile) {
+      const submitData = new FormData();
+      submitData.append("restaurant_name", formData.restaurant_name);
+      submitData.append("email_address", formData.email_address);
+      submitData.append("phone_number", formData.phone_number);
+      submitData.append("physical_address", formData.physical_address);
+      submitData.append("footer_description", formData.footer_description);
+      submitData.append("working_hours_mon_sat", formData.working_hours_mon_sat);
+      submitData.append("working_hours_sunday", formData.working_hours_sunday);
+      submitData.append("is_cod_enabled", String(formData.is_cod_enabled));
+      submitData.append("offer_title", formData.offer_title);
+      submitData.append("offer_subtitle", formData.offer_subtitle);
+      submitData.append("offer_badge_text", formData.offer_badge_text);
+      submitData.append("is_offer_card_active", String(formData.is_offer_card_active));
+      submitData.append("offer_banner_image", selectedImageFile);
+      await onSave(submitData);
+    } else {
+      await onSave(formData);
+    }
   };
 
   return (
@@ -275,6 +316,108 @@ export default function GeneralSettingsForm({
                 placeholder="e.g. Midnight feast on selected items"
                 className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-medium text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
               />
+            </div>
+
+            {/* Poster Banner Image Upload & Live Preview */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+                <ImageIcon size={13} className="text-brand-gold" />
+                <span>Offer Poster Image (Homepage Banner)</span>
+              </label>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center bg-brand-gold/5 p-4 rounded-2xl border border-brand-gold/20">
+                {/* Live Preview on Left */}
+                <div className="lg:col-span-7">
+                  <p className="text-[10px] font-bold text-gray-500 mb-1.5 flex items-center justify-between">
+                    <span>Card Live Preview (Customer Homepage):</span>
+                    {previewUrl ? (
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
+                        <CheckCircle2 size={11} /> Custom Banner Set
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">Default Feast Banner Active</span>
+                    )}
+                  </p>
+
+                  <div className="relative overflow-hidden rounded-xl border border-brand-gold/30 bg-[#0d1f18] min-h-[140px] flex items-center">
+                    {/* Background Image */}
+                    <img
+                      src={previewUrl || "https://grandeplaza.com/offers-banner.jpg"}
+                      alt="Offer Banner Preview"
+                      className="absolute inset-0 h-full w-full object-cover object-[85%_35%]"
+                    />
+                    {/* Dark gradient for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent" />
+
+                    {/* Preview Overlay Text */}
+                    <div className="relative z-10 p-4 w-[80%] space-y-1">
+                      {formData.offer_badge_text && (
+                        <div className="inline-flex items-center gap-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-2 py-0.5">
+                          <Flame className="w-2.5 h-2.5 text-brand-gold" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">
+                            {formData.offer_badge_text}
+                          </span>
+                        </div>
+                      )}
+                      <h4 className="text-white text-base font-serif font-black leading-tight drop-shadow-sm">
+                        {formData.offer_title || "Up to 40% OFF"}
+                      </h4>
+                      {formData.offer_subtitle && (
+                        <p className="text-gray-200 text-[10px] font-medium leading-snug line-clamp-1">
+                          {formData.offer_subtitle}
+                        </p>
+                      )}
+                      <div className="pt-1">
+                        <span className="inline-block rounded-md bg-brand-gold px-2 py-0.5 text-[8px] font-black uppercase text-[#0d1f18]">
+                          View Offers →
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Controls on Right */}
+                <div className="lg:col-span-5 space-y-3">
+                  <div className="text-xs text-gray-600">
+                    <p className="font-semibold text-brand-green-dark text-[11px]">Upload Custom Offer Poster</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      Recommended: 1200×600 or 16:9 ratio landscape food image. PNG, JPG or WEBP.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-gold/20 hover:bg-brand-gold/30 text-brand-green-dark border border-brand-gold/50 text-[11px] font-black uppercase tracking-wider cursor-pointer transition-all shadow-xs">
+                      <Upload size={13} className="text-brand-green-dark" />
+                      <span>{previewUrl ? "Change Poster" : "Choose Poster"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {selectedImageFile && (
+                      <button
+                        type="button"
+                        onClick={handleResetImage}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition-all cursor-pointer"
+                        title="Cancel selected image"
+                      >
+                        <X size={12} />
+                        <span>Cancel</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {selectedImageFile && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                      <CheckCircle2 size={12} />
+                      <span className="truncate">Selected: {selectedImageFile.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

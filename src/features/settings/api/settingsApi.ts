@@ -38,6 +38,8 @@ export interface SiteSettings {
   offerSubtitle?: string;
   offer_badge_text?: string;
   offerBadgeText?: string;
+  offer_banner_image?: string | null;
+  offerBannerImage?: string | null;
   is_offer_card_active?: boolean;
   isOfferCardActive?: boolean;
 }
@@ -58,8 +60,13 @@ export const getSiteSettingsApi = async () => {
   return response.data;
 };
 
-export const updateSiteSettingsApi = async (data: Partial<SiteSettings>) => {
-  const response = await axiosInstance.patch("/settings/site-settings", data);
+export const updateSiteSettingsApi = async (data: Partial<SiteSettings> | FormData) => {
+  const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+  const response = await axiosInstance.patch(
+    "/settings/site-settings",
+    data,
+    isFormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined
+  );
   return response.data;
 };
 
