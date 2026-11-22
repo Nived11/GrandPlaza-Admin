@@ -13,6 +13,9 @@ import {
   Loader2,
   Banknote,
   Power,
+  Flame,
+  Sparkles,
+  Tag,
 } from "lucide-react";
 
 interface GeneralSettingsFormProps {
@@ -35,6 +38,10 @@ export default function GeneralSettingsForm({
     working_hours_mon_sat: settings.working_hours_mon_sat || "",
     working_hours_sunday: settings.working_hours_sunday || "",
     is_cod_enabled: Boolean(settings.is_cod_enabled ?? settings.isCodEnabled),
+    offer_title: settings.offer_title ?? settings.offerTitle ?? "Up to 40% OFF",
+    offer_subtitle: settings.offer_subtitle ?? settings.offerSubtitle ?? "Midnight feast on selected items",
+    offer_badge_text: settings.offer_badge_text ?? settings.offerBadgeText ?? "Late Night Special",
+    is_offer_card_active: Boolean(settings.is_offer_card_active ?? settings.isOfferCardActive ?? true),
   });
 
   const handleChange = (
@@ -172,6 +179,103 @@ export default function GeneralSettingsForm({
               placeholder="e.g. 11:00 AM - 11:30 PM"
               className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
             />
+          </div>
+        </div>
+
+        {/* 🌟 PROMOTIONAL OFFER BANNER (HOMEPAGE) */}
+        <div className="border-t border-brand-gold/10 pt-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs sm:text-base font-black uppercase tracking-tight text-brand-green-dark flex items-center gap-2">
+                <Flame size={17} className="text-amber-500 animate-pulse" />
+                <span>Homepage <span className="text-brand-gold">Promotional Offer Banner</span></span>
+              </h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Change the offer headline, description, and visibility shown on the customer website homepage.
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="flex items-center gap-3">
+              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                formData.is_offer_card_active
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                  : "bg-gray-100 text-gray-700 border border-gray-300"
+              }`}>
+                {formData.is_offer_card_active ? "Banner Active" : "Banner Hidden"}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    is_offer_card_active: !formData.is_offer_card_active,
+                  })
+                }
+                className={`relative inline-flex h-8 w-16 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  formData.is_offer_card_active ? "bg-emerald-600" : "bg-gray-300"
+                }`}
+                title="Toggle Offer Banner"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-7 w-7 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                    formData.is_offer_card_active ? "translate-x-8 text-emerald-600" : "translate-x-0 text-gray-400"
+                  }`}
+                >
+                  <Power size={13} strokeWidth={2.5} />
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Offer Title (e.g. Up to 40% OFF) */}
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+                <Tag size={13} className="text-brand-gold" />
+                <span>Offer Headline (e.g. Up to 40% OFF)</span>
+              </label>
+              <input
+                type="text"
+                name="offer_title"
+                value={formData.offer_title}
+                onChange={handleChange}
+                placeholder="e.g. Up to 40% OFF or Flat 30% OFF"
+                className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              />
+            </div>
+
+            {/* Badge Label (e.g. Late Night Special) */}
+            <div className="space-y-1.5">
+              <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+                <Sparkles size={13} className="text-brand-gold" />
+                <span>Badge Text</span>
+              </label>
+              <input
+                type="text"
+                name="offer_badge_text"
+                value={formData.offer_badge_text}
+                onChange={handleChange}
+                placeholder="e.g. Late Night Special or Weekend Deal"
+                className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              />
+            </div>
+
+            {/* Offer Subtitle (Full width) */}
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green-dark">
+                <FileText size={13} className="text-brand-gold" />
+                <span>Offer Subtitle / Description</span>
+              </label>
+              <input
+                type="text"
+                name="offer_subtitle"
+                value={formData.offer_subtitle}
+                onChange={handleChange}
+                placeholder="e.g. Midnight feast on selected items"
+                className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-4 py-3 text-xs font-medium text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all shadow-xs"
+              />
+            </div>
           </div>
         </div>
 

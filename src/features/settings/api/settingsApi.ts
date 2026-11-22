@@ -32,6 +32,14 @@ export interface SiteSettings {
   facebook_url: string;
   twitter_url: string;
   whatsapp_url: string;
+  offer_title?: string;
+  offerTitle?: string;
+  offer_subtitle?: string;
+  offerSubtitle?: string;
+  offer_badge_text?: string;
+  offerBadgeText?: string;
+  is_offer_card_active?: boolean;
+  isOfferCardActive?: boolean;
 }
 
 export interface FAQItem {
