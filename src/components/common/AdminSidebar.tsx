@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, ShoppingBag, Utensils, 
   Star, Users, DollarSign, LogOut, Mail, 
-  ChevronLeft, ChevronRight, X, BookIcon, Settings, Loader2
+  ChevronLeft, ChevronRight, X, BookIcon, Settings, Loader2, Flame
 } from "lucide-react";
 import { useAdminLogout } from "@/features/auth/hooks/useAdminLogout";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -51,6 +51,7 @@ export default function AdminSidebar({ isExpanded, setIsExpanded, isMobileOpen, 
     { name: "Menu", path: "/menu", icon: <Utensils size={20} />, roles: ["admin", "employee"] },
 
     // 🔒 ADMIN-ONLY PAGES: Blocked & Hidden for Kitchen Staff
+    { name: "Offers", path: "/offers", icon: <Flame size={20} />, roles: ["admin"] },
     { name: "Bookings", path: "/bookings", icon: <BookIcon size={20} />, roles: ["admin"] },
     { name: "Inbox", path: "/inbox", icon: <Mail size={20} />, roles: ["admin"] }, 
     { name: "Reviews", path: "/reviews", icon: <Star size={20} />, roles: ["admin"] },
