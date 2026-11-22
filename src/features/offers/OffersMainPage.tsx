@@ -113,6 +113,11 @@ export default function OffersMainPage() {
 
   // Active banner
   const activeBanner = banners.find((b) => Boolean(b.is_active ?? b.isActive));
+  const isActivePureGraphic = Boolean(
+    activeBanner?.hide_text_overlay ??
+    activeBanner?.hideTextOverlay ??
+    (!activeBanner?.title && !activeBanner?.subtitle && !(activeBanner?.badge_text || activeBanner?.badgeText))
+  );
 
   return (
     <div className="min-h-screen w-full text-slate-900 p-2 sm:p-4 lg:p-4 font-sans antialiased space-y-5 sm:space-y-6 overflow-x-hidden">
@@ -137,6 +142,11 @@ export default function OffersMainPage() {
                 <h2 className="text-sm sm:text-base font-black uppercase tracking-tight text-brand-green-dark">
                   Currently Live on <span className="text-brand-gold">grandeplaza.com</span>
                 </h2>
+                {isActivePureGraphic && (
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-brand-gold/20 text-brand-green-dark border border-brand-gold/40">
+                    Graphic Only
+                  </span>
+                )}
               </div>
               <span className="text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 self-start sm:self-auto">
                 {isGlobalActive ? "● Active on Website" : "○ Hidden (Global Toggle OFF)"}
@@ -146,34 +156,39 @@ export default function OffersMainPage() {
             <div className="relative overflow-hidden rounded-2xl border border-brand-gold/30 bg-[#0d1f18] min-h-[160px] sm:min-h-[190px] flex items-center shadow-md">
               <img
                 src={activeBanner.image || activeBanner.imageUrl || "https://grandeplaza.com/offers-banner.jpg"}
-                alt={activeBanner.title}
+                alt={activeBanner.title || "Active Offer Poster"}
                 className="absolute inset-0 h-full w-full object-cover object-[85%_35%] sm:object-center"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-transparent sm:via-black/60" />
 
-              <div className="relative z-10 p-5 sm:p-7 w-[85%] sm:w-[60%] space-y-1.5">
-                {(activeBanner.badge_text || activeBanner.badgeText) && (
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-2.5 py-0.5">
-                    <Flame className="w-3 h-3 text-brand-gold animate-pulse" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold">
-                      {activeBanner.badge_text || activeBanner.badgeText}
-                    </span>
+              {!isActivePureGraphic && (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-transparent sm:via-black/60" />
+
+                  <div className="relative z-10 p-5 sm:p-7 w-[85%] sm:w-[60%] space-y-1.5">
+                    {(activeBanner.badge_text || activeBanner.badgeText) && (
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-2.5 py-0.5">
+                        <Flame className="w-3 h-3 text-brand-gold animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold">
+                          {activeBanner.badge_text || activeBanner.badgeText}
+                        </span>
+                      </div>
+                    )}
+                    <h3 className="text-white text-xl sm:text-2xl font-serif font-black leading-tight drop-shadow-sm">
+                      {activeBanner.title}
+                    </h3>
+                    {activeBanner.subtitle && (
+                      <p className="text-gray-200 text-xs sm:text-sm font-medium leading-snug">
+                        {activeBanner.subtitle}
+                      </p>
+                    )}
+                    <div className="pt-2">
+                      <span className="inline-block rounded-lg bg-brand-gold px-3.5 py-1.5 text-[10px] font-black uppercase text-[#0d1f18] shadow-sm">
+                        View Offers →
+                      </span>
+                    </div>
                   </div>
-                )}
-                <h3 className="text-white text-xl sm:text-2xl font-serif font-black leading-tight drop-shadow-sm">
-                  {activeBanner.title}
-                </h3>
-                {activeBanner.subtitle && (
-                  <p className="text-gray-200 text-xs sm:text-sm font-medium leading-snug">
-                    {activeBanner.subtitle}
-                  </p>
-                )}
-                <div className="pt-2">
-                  <span className="inline-block rounded-lg bg-brand-gold px-3.5 py-1.5 text-[10px] font-black uppercase text-[#0d1f18] shadow-sm">
-                    View Offers →
-                  </span>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
         ) : (

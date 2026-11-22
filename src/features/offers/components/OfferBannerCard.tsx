@@ -20,7 +20,12 @@ export default function OfferBannerCard({
   isActivating,
 }: OfferBannerCardProps) {
   const isActive = Boolean(banner.is_active ?? banner.isActive);
-  const badge = banner.badge_text || banner.badgeText || "Special Offer";
+  const badge = banner.badge_text || banner.badgeText || "";
+  const isPureGraphic = Boolean(
+    banner.hide_text_overlay ??
+    banner.hideTextOverlay ??
+    (!banner.title && !banner.subtitle && !badge)
+  );
   const imageSrc = banner.image || banner.imageUrl || "https://grandeplaza.com/offers-banner.jpg";
 
   return (
@@ -35,10 +40,36 @@ export default function OfferBannerCard({
       <div className="relative h-44 sm:h-48 w-full bg-[#0d1f18] overflow-hidden">
         <img
           src={imageSrc}
-          alt={banner.title}
-          className="h-full w-full object-cover object-[85%_35%] transition-transform duration-500 group-hover:scale-105"
+          alt={banner.title || "Offer Poster"}
+          className="h-full w-full object-cover object-[85%_35%] sm:object-center transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent" />
+
+        {!isPureGraphic && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent" />
+            {/* Text Overlay on Banner */}
+            <div className="absolute bottom-3 left-3 right-3 z-10 space-y-1">
+              {badge && (
+                <div className="inline-flex items-center gap-1 rounded-full bg-brand-gold/25 border border-brand-gold/40 px-2 py-0.5">
+                  <Flame className="w-2.5 h-2.5 text-brand-gold animate-pulse" />
+                  <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">
+                    {badge}
+                  </span>
+                </div>
+              )}
+              {banner.title && (
+                <h3 className="text-white text-base sm:text-lg font-serif font-black leading-tight drop-shadow-md">
+                  {banner.title}
+                </h3>
+              )}
+              {banner.subtitle && (
+                <p className="text-gray-200 text-[10px] line-clamp-1 font-medium">
+                  {banner.subtitle}
+                </p>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Status Pill on Top */}
         <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
@@ -52,25 +83,11 @@ export default function OfferBannerCard({
               In Library
             </span>
           )}
-        </div>
 
-        {/* Text Overlay on Banner */}
-        <div className="absolute bottom-3 left-3 right-3 z-10 space-y-1">
-          {badge && (
-            <div className="inline-flex items-center gap-1 rounded-full bg-brand-gold/25 border border-brand-gold/40 px-2 py-0.5">
-              <Flame className="w-2.5 h-2.5 text-brand-gold animate-pulse" />
-              <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">
-                {badge}
-              </span>
-            </div>
-          )}
-          <h3 className="text-white text-base sm:text-lg font-serif font-black leading-tight drop-shadow-md">
-            {banner.title}
-          </h3>
-          {banner.subtitle && (
-            <p className="text-gray-200 text-[10px] line-clamp-1 font-medium">
-              {banner.subtitle}
-            </p>
+          {isPureGraphic && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-gold/80 text-brand-green-dark text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-xs">
+              Graphic Only
+            </span>
           )}
         </div>
       </div>
@@ -78,11 +95,14 @@ export default function OfferBannerCard({
       {/* 📋 Card Body & Controls */}
       <div className="p-4 sm:p-5 flex flex-col justify-between flex-1 gap-4">
         <div className="space-y-1 text-left">
-          <p className="text-[11px] font-bold text-brand-green-dark line-clamp-2">
-            {banner.subtitle || "Exclusive deal available on customer home screen."}
+          <p className="text-xs font-black uppercase text-brand-green-dark">
+            {banner.title || "Graphic Poster Banner"}
+          </p>
+          <p className="text-[11px] font-medium text-gray-500 line-clamp-2">
+            {banner.subtitle || (isPureGraphic ? "Standalone graphic poster without text overlay." : "Exclusive deal available on customer home screen.")}
           </p>
           {banner.created_at && (
-            <p className="text-[9px] text-gray-400 font-medium">
+            <p className="text-[9px] text-gray-400 font-medium pt-1">
               Added: {new Date(banner.created_at).toLocaleDateString()}
             </p>
           )}

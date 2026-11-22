@@ -24,6 +24,7 @@ export default function UploadOfferModal({
   const [title, setTitle] = useState("Up to 40% OFF");
   const [subtitle, setSubtitle] = useState("Midnight feast on selected items");
   const [badgeText, setBadgeText] = useState("Late Night Special");
+  const [hideTextOverlay, setHideTextOverlay] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -34,6 +35,12 @@ export default function UploadOfferModal({
       setTitle(editingBanner.title || "");
       setSubtitle(editingBanner.subtitle || "");
       setBadgeText(editingBanner.badge_text || editingBanner.badgeText || "");
+      const isHidden = Boolean(
+        editingBanner.hide_text_overlay ??
+        editingBanner.hideTextOverlay ??
+        (!editingBanner.title && !editingBanner.subtitle && !editingBanner.badge_text)
+      );
+      setHideTextOverlay(isHidden);
       setIsActive(Boolean(editingBanner.is_active ?? editingBanner.isActive));
       setPreviewUrl(editingBanner.image || editingBanner.imageUrl || null);
       setSelectedFile(null);
@@ -41,6 +48,7 @@ export default function UploadOfferModal({
       setTitle("Up to 40% OFF");
       setSubtitle("Midnight feast on selected items");
       setBadgeText("Late Night Special");
+      setHideTextOverlay(false);
       setIsActive(true);
       setPreviewUrl("https://grandeplaza.com/offers-banner.jpg");
       setSelectedFile(null);
@@ -65,10 +73,8 @@ export default function UploadOfferModal({
       return;
     }
 
-    if (!title.trim()) {
-      toast.error("Please provide an offer title (e.g. Up to 40% OFF)!");
-      return;
-    }
+    const shouldHideText =
+      hideTextOverlay || (!title.trim() && !subtitle.trim() && !badgeText.trim());
 
     setSubmitting(true);
     try {
@@ -76,6 +82,7 @@ export default function UploadOfferModal({
       formData.append("title", title.trim());
       formData.append("subtitle", subtitle.trim());
       formData.append("badge_text", badgeText.trim());
+      formData.append("hide_text_overlay", String(shouldHideText));
       formData.append("is_active", String(isActive));
 
       if (selectedFile) {
@@ -149,33 +156,44 @@ export default function UploadOfferModal({
             <img
               src={previewUrl || "https://grandeplaza.com/offers-banner.jpg"}
               alt="Preview"
-              className="absolute inset-0 h-full w-full object-cover object-[85%_35%]"
+              className="absolute inset-0 h-full w-full object-cover object-[85%_35%] sm:object-center"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-transparent sm:via-black/60" />
+            
+            {!(hideTextOverlay || (!title.trim() && !subtitle.trim() && !badgeText.trim())) && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/75 to-transparent sm:via-black/60" />
 
-            <div className="relative z-10 p-4 sm:p-5 w-[85%] sm:w-[70%] space-y-1">
-              {badgeText && (
-                <div className="inline-flex items-center gap-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-2 py-0.5">
-                  <Flame className="w-2.5 h-2.5 text-brand-gold" />
-                  <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">
-                    {badgeText}
-                  </span>
+                <div className="relative z-10 p-4 sm:p-5 w-[85%] sm:w-[70%] space-y-1">
+                  {badgeText && (
+                    <div className="inline-flex items-center gap-1 rounded-full bg-brand-gold/20 border border-brand-gold/40 px-2 py-0.5">
+                      <Flame className="w-2.5 h-2.5 text-brand-gold" />
+                      <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">
+                        {badgeText}
+                      </span>
+                    </div>
+                  )}
+                  <h4 className="text-white text-base sm:text-lg font-serif font-black leading-tight drop-shadow-sm">
+                    {title || "Up to 40% OFF"}
+                  </h4>
+                  {subtitle && (
+                    <p className="text-gray-200 text-[10px] sm:text-[11px] font-medium leading-snug line-clamp-2">
+                      {subtitle}
+                    </p>
+                  )}
+                  <div className="pt-1">
+                    <span className="inline-block rounded-md bg-brand-gold px-2.5 py-1 text-[8px] font-black uppercase text-[#0d1f18]">
+                      View Offers →
+                    </span>
+                  </div>
                 </div>
-              )}
-              <h4 className="text-white text-base sm:text-lg font-serif font-black leading-tight drop-shadow-sm">
-                {title || "Up to 40% OFF"}
-              </h4>
-              {subtitle && (
-                <p className="text-gray-200 text-[10px] sm:text-[11px] font-medium leading-snug line-clamp-2">
-                  {subtitle}
-                </p>
-              )}
-              <div className="pt-1">
-                <span className="inline-block rounded-md bg-brand-gold px-2.5 py-1 text-[8px] font-black uppercase text-[#0d1f18]">
-                  View Offers →
-                </span>
+              </>
+            )}
+
+            {(hideTextOverlay || (!title.trim() && !subtitle.trim() && !badgeText.trim())) && (
+              <div className="absolute bottom-2.5 right-2.5 z-10 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg border border-brand-gold/40 text-[9px] font-black uppercase text-brand-gold tracking-wider">
+                Full Graphic Poster (No Text Overlay)
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -206,19 +224,37 @@ export default function UploadOfferModal({
             </div>
           </div>
 
+          {/* 🌟 Pure Graphic Poster Toggle */}
+          <div className="bg-brand-gold/10 p-3.5 rounded-2xl border border-brand-gold/30 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase text-brand-green-dark flex items-center gap-1.5">
+                <Sparkles size={13} className="text-brand-gold" />
+                Pure Graphic Poster (No Text Overlay)
+              </p>
+              <p className="text-[10px] text-gray-600 mt-0.5">
+                Turn this ON if your image already has offers/text designed into it. All HTML headings, badges and dark shadows will be hidden!
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              checked={hideTextOverlay}
+              onChange={(e) => setHideTextOverlay(e.target.checked)}
+              className="w-5 h-5 text-emerald-600 rounded cursor-pointer accent-emerald-600 shrink-0"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {/* Offer Headline */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-wider text-brand-green-dark flex items-center gap-1.5">
                 <Tag size={13} className="text-brand-gold" />
-                <span>Offer Headline *</span>
+                <span>Offer Headline {hideTextOverlay ? "(Optional)" : ""}</span>
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Up to 40% OFF"
-                required
+                placeholder={hideTextOverlay ? "Optional headline" : "e.g. Up to 40% OFF"}
                 className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold"
               />
             </div>
@@ -227,13 +263,13 @@ export default function UploadOfferModal({
             <div className="space-y-1.5">
               <label className="text-[10px] font-black uppercase tracking-wider text-brand-green-dark flex items-center gap-1.5">
                 <Sparkles size={13} className="text-brand-gold" />
-                <span>Badge Label</span>
+                <span>Badge Label {hideTextOverlay ? "(Optional)" : ""}</span>
               </label>
               <input
                 type="text"
                 value={badgeText}
                 onChange={(e) => setBadgeText(e.target.value)}
-                placeholder="e.g. Late Night Special"
+                placeholder={hideTextOverlay ? "Optional badge" : "e.g. Late Night Special"}
                 className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-3.5 py-2.5 text-xs font-bold text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold"
               />
             </div>
@@ -242,13 +278,13 @@ export default function UploadOfferModal({
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-[10px] font-black uppercase tracking-wider text-brand-green-dark flex items-center gap-1.5">
                 <FileText size={13} className="text-brand-gold" />
-                <span>Subtitle / Description</span>
+                <span>Subtitle / Description {hideTextOverlay ? "(Optional)" : ""}</span>
               </label>
               <input
                 type="text"
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="e.g. Midnight feast on selected items"
+                placeholder={hideTextOverlay ? "Optional description" : "e.g. Midnight feast on selected items"}
                 className="w-full bg-brand-gold/5 border border-brand-gold/30 rounded-xl px-3.5 py-2.5 text-xs font-medium text-brand-green-dark outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold"
               />
             </div>

@@ -8,6 +8,8 @@ export interface OfferBanner {
   badgeText?: string;
   image: string;
   imageUrl?: string;
+  hide_text_overlay?: boolean;
+  hideTextOverlay?: boolean;
   is_active: boolean;
   isActive?: boolean;
   created_at?: string;
