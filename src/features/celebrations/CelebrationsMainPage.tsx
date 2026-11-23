@@ -44,7 +44,7 @@ const FESTIVAL_THEMES: FestivalOption[] = [
     icon: "🌼",
     tagline: "Pookalam & Golden Kasavu Trim",
     details: "Vibrant floral pookalam corner trims, golden kasavu patterns, and traditional festive celebration accents.",
-    status: "coming_soon",
+    status: "ready",
     accentColor: "border-amber-500/40 hover:border-amber-500 bg-amber-50/30",
   },
   {
@@ -54,7 +54,7 @@ const FESTIVAL_THEMES: FestivalOption[] = [
     icon: "🌟",
     tagline: "Kanikkonna & Golden Illumination",
     details: "Cascading yellow Kanikkonna flower accents, golden coins, and warm auspicious festival lights.",
-    status: "coming_soon",
+    status: "ready",
     accentColor: "border-yellow-500/40 hover:border-yellow-500 bg-yellow-50/30",
   },
   {
@@ -64,7 +64,7 @@ const FESTIVAL_THEMES: FestivalOption[] = [
     icon: "🌙",
     tagline: "Crescent Moon & Fanous Lanterns",
     details: "Golden crescent accents, hanging traditional lanterns, and warm emerald evening ambience.",
-    status: "coming_soon",
+    status: "ready",
     accentColor: "border-emerald-500/40 hover:border-emerald-500 bg-emerald-50/30",
   },
   {
@@ -74,7 +74,7 @@ const FESTIVAL_THEMES: FestivalOption[] = [
     icon: "🪔",
     tagline: "Deepam Garlands & Sparkling Lights",
     details: "Golden earthen deepams, warm amber flame flickers, and festive light trails.",
-    status: "coming_soon",
+    status: "ready",
     accentColor: "border-orange-500/40 hover:border-orange-500 bg-orange-50/30",
   },
 ];
@@ -130,15 +130,15 @@ export default function CelebrationsMainPage() {
 
   // Select theme
   const handleSelectTheme = async (themeId: string) => {
-    if (themeId === activeTheme) return;
     setActiveTheme(themeId);
     setSaving(true);
     try {
       await updateSiteSettingsApi({
-        celebration_mode: isCelebrationActive,
+        celebration_mode: true,
         celebration_theme: themeId,
       });
-      toast.success(`Theme updated to ${themeId.toUpperCase()}`);
+      setIsCelebrationActive(true);
+      toast.success(`🎉 ${themeId.toUpperCase()} theme activated on storefront!`);
     } catch (err: any) {
       console.error("Failed to update theme:", err);
       toast.error(extractErrorMessages(err) || "Failed to update festival theme.");
