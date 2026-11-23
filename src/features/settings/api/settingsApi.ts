@@ -42,6 +42,10 @@ export interface SiteSettings {
   offerBannerImage?: string | null;
   is_offer_card_active?: boolean;
   isOfferCardActive?: boolean;
+  celebration_mode?: boolean;
+  celebrationMode?: boolean;
+  celebration_theme?: string;
+  celebrationTheme?: string;
 }
 
 export interface FAQItem {
